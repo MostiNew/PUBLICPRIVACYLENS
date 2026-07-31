@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <title>PrivacyLens · Public</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕶️</text></svg>" />
+
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #preview {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        #overlay-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* ===== QR SCANNER OVERLAY ===== */
+        .qr-scanner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .qr-scanner-overlay.active {
+            display: block;
+            pointer-events: auto;
+        }
+
+        .qr-scanner-overlay .scan-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 220px;
+            border: 3px solid rgba(46, 204, 113, 0.8);
+            border-radius: 16px;
+            box-shadow: 0 0 60px rgba(46, 204, 113, 0.15);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .qr-scanner-overlay .scan-area .corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #2ecc71;
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .qr-scanner-overlay .scan-area .corner.tl {
+            top: -3px;
+            left: -3px;
+            border-top-width: 4px;
+            border-left-width: 4px;
+            border-radius: 6px 0 0 0;
+        }
+        .qr-scanner-overlay .scan-area .corner.tr {
+            top: -3px;
+            right: -3px;
+            border-top-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 6px 0 0;
+        }
+        .qr-scanner-overlay .scan-area .corner.bl {
+            bottom: -3px;
+            left: -3px;
+            border-bottom-width: 4px;
+            border-left-width: 4px;
+            border-radius: 0 0 0 6px;
+        }
+        .qr-scanner-overlay .scan-area .corner.br {
+            bottom: -3px;
+            right: -3px;
+            border-bottom-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 0 6px 0;
+        }
+
+        .qr-scanner-overlay .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2ecc71, transparent);
+            animation: scan-line 2s ease-in-out infinite;
+            transform: translateY(-50%);
+        }
+
+        @keyframes scan-line {
+            0%,
+            100% {
+                top: 10%;
+            }
+            50% {
+                top: 90%;
+            }
+        }
+
+        .qr-scanner-overlay .label {
+            position: absolute;
+            bottom: 28%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+        }
+
+        .qr-scanner-overlay .cancel-btn {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .qr-scanner-overlay .cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ===== GLASSES HUD ===== */
+        .hud {
+            position: fixed;
+            z-index: 5;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .hud-top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 18px;
+            border-radius: 40px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .hud-top .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71aa;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .hud-top .status-dot.off {
+            background: #555;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .hud-top .status-dot.scanning {
+            background: #f39c12;
+            box-shadow: 0 0 12px #f39c12aa;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.85);
+            }
+        }
+
+        .hud-top .zone-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .hud-top .policy-badge {
+            font-size: 9px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .policy-badge.public {
+            background: #3498db;
+            color: #fff;
+        }
+        .policy-badge.patient {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .policy-badge.staff {
+            background: #2ecc71;
+            color: #000;
+        }
+        .policy-badge.mixed {
+            background: #f39c12;
+            color: #000;
+        }
+        .policy-badge.restricted {
+            background: #8e44ad;
+            color: #fff;
+        }
+        .policy-badge.unknown {
+            background: #555;
+            color: #aaa;
+        }
+
+        .hud-bottom {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 60px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: none;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hud-bottom .hint {
+            opacity: 0.4;
+            font-size: 9px;
+            letter-spacing: 0.3px;
+        }
+
+        .hud-bottom .hint kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .hud-bottom .face-count {
+            color: #8bebc8;
+            font-weight: 600;
+        }
+
+        .hud-bottom .privacy-status {
+            color: #2ecc71;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 60px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: all 0.4s ease;
+            pointer-events: none;
+            text-align: center;
+            max-width: 90vw;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: #2ecc71;
+        }
+        .toast.error {
+            border-color: #e74c3c;
+        }
+        .toast.info {
+            border-color: #3498db;
+        }
+        .toast.qr {
+            border-color: #f39c12;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .hud-top {
+                font-size: 10px;
+                padding: 4px 12px;
+                gap: 8px;
+            }
+            .hud-bottom {
+                padding: 4px 12px;
+                font-size: 8px;
+                gap: 8px;
+            }
+            .qr-scanner-overlay .scan-area {
+                width: 160px;
+                height: 160px;
+            }
+            .qr-scanner-overlay .label {
+                font-size: 12px;
+                padding: 8px 16px;
+                bottom: 32%;
+            }
+            .hud-bottom .hint {
+                display: none;
+            }
+        }
+
+        /* Landscape / Glasses */
+        @media (orientation: landscape) {
+            .hud-top {
+                font-size: 13px;
+                padding: 8px 20px;
+            }
+            .hud-bottom {
+                padding: 8px 20px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== CAMERA PREVIEW ===== -->
+    <video id="preview" playsinline autoplay muted></video>
+    <canvas id="overlay-canvas"></canvas>
+
+    <!-- ===== QR SCANNER OVERLAY ===== -->
+    <div class="qr-scanner-overlay" id="qr-scanner">
+        <div class="scan-area">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+            <div class="scan-line"></div>
+        </div>
+        <div class="label">📸 Scan Zone QR Code</div>
+        <div class="cancel-btn" id="qr-cancel">Cancel</div>
+    </div>
+
+    <!-- ===== GLASSES HUD ===== -->
+    <div class="hud hud-top" id="hud-top">
+        <span class="status-dot off" id="status-dot"></span>
+        <span class="zone-name" id="zone-name">Tap to Scan</span>
+        <span class="policy-badge unknown" id="policy-badge">●</span>
+        <span id="face-count-display">0 faces</span>
+    </div>
+
+    <div class="hud hud-bottom">
+        <span class="hint">
+            <kbd>tap</kbd> scan QR
+        </span>
+        <span class="privacy-status" id="privacy-status">
+            🔒 Privacy ON
+        </span>
+        <span class="face-count" id="face-count-mobile">0</span>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ================================================================
+            // 1. ZONE MAP — Public & Private Zones
+            // ================================================================
+
+            const ZONE_MAP = {
+                // Public Zones (anyone can use)
+                'PUBLIC': { id: 'PUBLIC', name: 'Public Area', policy: 'public' },
+                'PARK': { id: 'PARK', name: 'Park / Outdoors', policy: 'public' },
+                'MALL': { id: 'MALL', name: 'Shopping Mall', policy: 'public' },
+                'STREET': { id: 'STREET', name: 'Street / Sidewalk', policy: 'public' },
+                'CAFE': { id: 'CAFE', name: 'Café / Restaurant', policy: 'public' },
+                'EVENT': { id: 'EVENT', name: 'Event / Conference', policy: 'public' },
+
+                // Healthcare Zones (for medical professionals)
+                'OR-3': { id: 'OR-3', name: 'Operating Room', policy: 'patient' },
+                'ICU-7': { id: 'ICU-7', name: 'ICU Bed 7', policy: 'patient' },
+                'NURSE-2W': { id: 'NURSE-2W', name: 'Nurse Station', policy: 'staff' },
+                'LOBBY': { id: 'LOBBY', name: 'Hospital Lobby', policy: 'public' },
+
+                // Restricted Zones (faces visible)
+                'ADMIN': { id: 'ADMIN', name: 'Admin Office', policy: 'restricted' },
+                'STAFF-LOUNGE': { id: 'STAFF-LOUNGE', name: 'Staff Lounge', policy: 'restricted' },
+            };
+
+            // ================================================================
+            // 2. DOM REFS
+            // ================================================================
+
+            const video = document.getElementById('preview');
+            const canvas = document.getElementById('overlay-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const elements = {
+                zoneName: document.getElementById('zone-name'),
+                policyBadge: document.getElementById('policy-badge'),
+                faceCount: document.getElementById('face-count-display'),
+                faceCountMobile: document.getElementById('face-count-mobile'),
+                statusDot: document.getElementById('status-dot'),
+                toast: document.getElementById('toast'),
+                qrScanner: document.getElementById('qr-scanner'),
+                privacyStatus: document.getElementById('privacy-status'),
+            };
+
+            // ================================================================
+            // 3. STATE
+            // ================================================================
+
+            let isRunning = false;
+            let isScanning = false;
+            let toastTimer = null;
+            let currentPolicy = 'public';
+            let currentZone = {
+                id: 'PUBLIC',
+                name: 'Public Area',
+                policy: 'public',
+            };
+            let stream = null;
+            let blurEnabled = true;
+
+            // ================================================================
+            // 4. FACE DETECTOR
+            // ================================================================
+
+            class SimpleFaceDetector {
+                detect(imageData) {
+                    const faces = [];
+                    const data = imageData.data;
+                    const w = imageData.width;
+                    const h = imageData.height;
+
+                    for (let y = 0; y < h; y += 8) {
+                        for (let x = 0; x < w; x += 8) {
+                            const idx = (y * w + x) * 4;
+                            const r = data[idx];
+                            const g = data[idx + 1];
+                            const b = data[idx + 2];
+
+                            const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
+                            const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
+
+                            if (cr >= 133 && cr <= 173 && cb >= 77 && cb <= 127) {
+                                faces.push({
+                                    x: x / w,
+                                    y: y / h,
+                                    width: 0.20,
+                                    height: 0.28,
+                                });
+                                break;
+                            }
+                        }
+                        if (faces.length > 8) break;
+                    }
+
+                    const unique = [];
+                    for (const f of faces) {
+                        let dup = false;
+                        for (const u of unique) {
+                            const dx = f.x - u.x;
+                            const dy = f.y - u.y;
+                            if (dx * dx + dy * dy < 0.01) dup = true;
+                        }
+                        if (!dup) unique.push(f);
+                    }
+
+                    return unique.slice(0, 12);
+                }
+            }
+
+            let detector = new SimpleFaceDetector();
+
+            // ================================================================
+            // 5. DRAW OVERLAY (Blur All Faces)
+            // ================================================================
+
+            function drawOverlay(faces) {
+                const w = canvas.width / (window.devicePixelRatio || 1);
+                const h = canvas.height / (window.devicePixelRatio || 1);
+                ctx.clearRect(0, 0, w, h);
+
+                // Update face count
+                const count = faces ? faces.length : 0;
+                elements.faceCount.textContent = count + ' faces';
+                elements.faceCountMobile.textContent = count;
+
+                if (!faces || faces.length === 0 || !blurEnabled) {
+                    return;
+                }
+
+                // Blur EVERY face
+                for (const face of faces) {
+                    const x = face.x * w;
+                    const y = face.y * h;
+                    const fw = face.width * w;
+                    const fh = face.height * h;
+
+                    // Mosaic blur
+                    const step = 10;
+                    for (let row = y; row < y + fh; row += step) {
+                        for (let col = x; col < x + fw; col += step) {
+                            const hue = ((row * 0.3 + col * 0.7 + 180) % 360);
+                            ctx.fillStyle = `hsl(${hue}, 40%, 50%)`;
+                            ctx.fillRect(col, row, step, step);
+                        }
+                    }
+
+                    // Dark overlay
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(x, y, fw, fh);
+
+                    // Red border (privacy indicator)
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 6]);
+                    ctx.strokeRect(x, y, fw, fh);
+                    ctx.setLineDash([]);
+
+                    // Lock icon
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.font = '16px system-ui, sans-serif';
+                    ctx.fillText('🔒', x + 8, y + 28);
+                }
+            }
+
+            // ================================================================
+            // 6. PROCESS LOOP
+            // ================================================================
+
+            function processFrame() {
+                if (!isRunning) return;
+
+                try {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = 320;
+                    tempCanvas.height = 240;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(video, 0, 0, 320, 240);
+                    const imageData = tempCtx.getImageData(0, 0, 320, 240);
+
+                    const faces = detector.detect(imageData);
+                    drawOverlay(faces);
+                    requestAnimationFrame(processFrame);
+
+                } catch (err) {
+                    console.error('Process error:', err);
+                    setTimeout(processFrame, 100);
+                }
+            }
+
+            // ================================================================
+            // 7. QR SCANNER
+            // ================================================================
+
+            let scanInterval = null;
+
+            function startQRScanner() {
+                if (isScanning) return;
+
+                if (!('BarcodeDetector' in window)) {
+                    showToast('❌ QR not supported', 'error', 2000);
+                    manualZoneEntry();
+                    return;
+                }
+
+                isScanning = true;
+                elements.qrScanner.classList.add('active');
+                elements.statusDot.className = 'status-dot scanning';
+                showToast('📸 Point at QR code', 'qr', 3000);
+
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+
+                scanInterval = setInterval(async () => {
+                    if (!isScanning) {
+                        clearInterval(scanInterval);
+                        return;
+                    }
+
+                    try {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = video.videoWidth || 640;
+                        tempCanvas.height = video.videoHeight || 480;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0);
+                        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+                        const bitmap = await createImageBitmap(
+                            new ImageData(imageData.data, tempCanvas.width, tempCanvas.height)
+                        );
+                        const detections = await barcodeDetector.detect(bitmap);
+                        bitmap.close();
+
+                        for (const detection of detections) {
+                            const qrCode = detection.rawValue.toUpperCase().trim();
+                            if (qrCode) {
+                                clearInterval(scanInterval);
+                                handleQRScan(qrCode);
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        // Silent fail
+                    }
+                }, 500);
+            }
+
+            function manualZoneEntry() {
+                const zoneList = Object.keys(ZONE_MAP);
+                let msg = 'Select zone:\n\n';
+                zoneList.forEach((id, i) => {
+                    msg += `${i+1}. ${ZONE_MAP[id].name} (${ZONE_MAP[id].policy})\n`;
+                });
+                const choice = prompt(msg);
+                if (choice) {
+                    const idx = parseInt(choice) - 1;
+                    if (idx >= 0 && idx < zoneList.length) {
+                        handleQRScan(zoneList[idx]);
+                    }
+                }
+            }
+
+            function stopQRScanner() {
+                isScanning = false;
+                elements.qrScanner.classList.remove('active');
+                elements.statusDot.className = 'status-dot';
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
+            }
+
+            function handleQRScan(qrCode) {
+                stopQRScanner();
+
+                const zone = ZONE_MAP[qrCode];
+                if (!zone) {
+                    showToast('❌ Unknown QR: ' + qrCode, 'error', 2000);
+                    return;
+                }
+
+                // Apply zone
+                currentZone = {
+                    id: zone.id,
+                    name: zone.name,
+                    policy: zone.policy || 'public',
+                };
+
+                currentPolicy = zone.policy || 'public';
+
+                // Update HUD
+                elements.zoneName.textContent = zone.name;
+                const badge = elements.policyBadge;
+                badge.className = 'policy-badge ' + (zone.policy || 'unknown');
+                const labels = {
+                    'public': '🌐 PUBLIC',
+                    'patient': '🔒 PATIENT',
+                    'staff': '👤 STAFF',
+                    'mixed': '⚠️ MIXED',
+                    'restricted': '🔓 RESTRICTED',
+                    'unknown': '❓ UNKNOWN'
+                };
+                badge.textContent = labels[zone.policy] || zone.policy;
+
+                elements.statusDot.className = 'status-dot';
+
+                // Set blur mode based on policy
+                if (zone.policy === 'restricted') {
+                    blurEnabled = false;
+                    elements.privacyStatus.textContent = '🔓 Faces Visible (Restricted)';
+                    elements.privacyStatus.style.color = '#f39c12';
+                    showToast(`🔓 ${zone.name} — faces visible`, 'info', 2000);
+                } else {
+                    blurEnabled = true;
+                    elements.privacyStatus.textContent = '🔒 Privacy ON';
+                    elements.privacyStatus.style.color = '#2ecc71';
+                    const policyLabels = {
+                        'public': '🌐 Public — faces protected',
+                        'patient': '🔒 Patient — faces protected',
+                        'staff': '👤 Staff — faces protected',
+                        'mixed': '⚠️ Mixed — faces protected',
+                    };
+                    showToast(policyLabels[zone.policy] || `📍 ${zone.name}`, 'success', 2000);
+                }
+            }
+
+            // ================================================================
+            // 8. TOAST
+            // ================================================================
+
+            function showToast(msg, type = 'info', duration = 2000) {
+                if (toastTimer) clearTimeout(toastTimer);
+                const toast = elements.toast;
+                toast.textContent = msg;
+                toast.className = 'toast visible ' + type;
+                toastTimer = setTimeout(() => {
+                    toast.className = 'toast';
+                }, duration);
+            }
+
+            // ================================================================
+            // 9. GESTURE CONTROLS
+            // ================================================================
+
+            let lastTapTime = 0;
+            let tapCount = 0;
+
+            document.addEventListener('click', (e) => {
+                const now = Date.now();
+                if (now - lastTapTime < 400) {
+                    tapCount++;
+                } else {
+                    tapCount = 1;
+                }
+                lastTapTime = now;
+
+                if (tapCount === 1) {
+                    setTimeout(() => {
+                        if (tapCount === 1) {
+                            if (!isScanning) {
+                                startQRScanner();
+                            } else {
+                                stopQRScanner();
+                            }
+                        }
+                        tapCount = 0;
+                    }, 400);
+                }
+            });
+
+            document.getElementById('qr-cancel').addEventListener('click', stopQRScanner);
+
+            // ================================================================
+            // 10. KEYBOARD SHORTCUTS
+            // ================================================================
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'q' || e.key === 'Q') {
+                    if (!isScanning) startQRScanner();
+                    else stopQRScanner();
+                }
+                if (e.key === 'g' || e.key === 'G') {
+                    const qrHTML = generateQRPage();
+                    const win = window.open('', '_blank');
+                    win.document.write(qrHTML);
+                    win.document.close();
+                    showToast('📄 QR codes generated', 'info', 2000);
+                }
+            });
+
+            // ================================================================
+            // 11. QR CODE GENERATOR
+            // ================================================================
+
+            function generateQRPage() {
+                let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>PrivacyLens QR Codes</title>
+                  <style>
+                    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 40px; }
+                    h1 { font-size: 24px; margin-bottom: 4px; }
+                    .sub { color: #666; margin-bottom: 30px; }
+                    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+                    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; border: 1px solid #e0e0e0; }
+                    .qr { width: 140px; height: 140px; margin: 0 auto 12px; background: #fff; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 8px; }
+                    .qr svg { width: 100%; height: 100%; }
+                    .name { font-weight: 600; font-size: 14px; }
+                    .policy { font-size: 12px; padding: 2px 12px; border-radius: 20px; display: inline-block; margin: 6px 0; }
+                    .policy.public { background: #eaf2f8; color: #2980b9; }
+                    .policy.patient { background: #fee; color: #c0392b; }
+                    .policy.staff { background: #efe; color: #27ae60; }
+                    .policy.mixed { background: #fef9e7; color: #f39c12; }
+                    .policy.restricted { background: #f4ecf7; color: #8e44ad; }
+                    .id { font-size: 10px; color: #999; margin-top: 4px; }
+                    .instructions { margin-top: 40px; padding: 20px; background: #e8f4fd; border-radius: 8px; border: 1px solid #b8d4e8; }
+                    .instructions strong { color: #1a5276; }
+                    @media print {
+                      body { padding: 20px; }
+                      .card { break-inside: avoid; }
+                      .instructions { display: none; }
+                    }
+                    @media (max-width: 768px) {
+                      .grid { grid-template-columns: repeat(2, 1fr); }
+                    }
+                  </style>
+                </head>
+                <body>
+                  <h1>🕶️ PrivacyLens QR Codes</h1>
+                  <p class="sub">Scan to set privacy zone. Works with any camera glasses.</p>
+                  <div class="grid">
+              `;
+
+                for (const id of Object.keys(ZONE_MAP)) {
+                    const zone = ZONE_MAP[id];
+                    const qrSvg = generateQRCodeSVG(id);
+                    html += `
+                    <div class="card">
+                      <div class="qr">${qrSvg}</div>
+                      <div class="name">${zone.name}</div>
+                      <div class="policy ${zone.policy}">${zone.policy.toUpperCase()}</div>
+                      <div class="id">${id}</div>
+                    </div>
+                  `;
+                }
+
+                html += `
+                  </div>
+                  <div class="instructions">
+                    <strong>📌 How to use:</strong><br>
+                    1. Print and cut out QR codes.<br>
+                    2. Place at zone entrances (eye level).<br>
+                    3. Scan with PrivacyLens to apply privacy policy.<br>
+                    4. All faces are blurred in real-time.<br>
+                    <span style="color:#999;font-size:12px;">Generated: ${new Date().toLocaleString()}</span>
+                  </div>
+                </body>
+                </html>
+              `;
+                return html;
+            }
+
+            function generateQRCodeSVG(text) {
+                const size = 140,
+                    cells = 21,
+                    cellSize = size / cells;
+                let hash = 0;
+                for (let i = 0; i < text.length; i++) {
+                    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                    hash = hash & hash;
+                }
+                let svg =
+                    `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><rect width="${size}" height="${size}" fill="white"/>`;
+                for (let row = 0; row < cells; row++) {
+                    for (let col = 0; col < cells; col++) {
+                        const val = (hash * (row * cells + col + 1)) % 2;
+                        if (val === 1) {
+                            svg +=
+                                `<rect x="${col * cellSize}" y="${row * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>`;
+                        }
+                    }
+                }
+                const addFinder = (x, y) => {
+                    for (let r = 0; r < 7; r++) {
+                        for (let c = 0; c < 7; c++) {
+                            if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+                                svg +=
+                                    `<rect x="${(x + c) * cellSize}" y="${(y + r) * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>`;
+                            }
+                        }
+                    }
+                };
+                addFinder(0, 0);
+                addFinder(cells - 7, 0);
+                addFinder(0, cells - 7);
+                svg += '</svg>';
+                return svg;
+            }
+
+            // ================================================================
+            // 12. RESIZE CANVAS
+            // ================================================================
+
+            function resizeCanvas() {
+                const rect = video.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                ctx.scale(dpr, dpr);
+            }
+
+            // ================================================================
+            // 13. INIT
+            // ================================================================
+
+            async function init() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'environment'
+                        },
+                        audio: false
+                    });
+
+                    video.srcObject = stream;
+                    await video.play();
+
+                    resizeCanvas();
+                    window.addEventListener('resize', resizeCanvas);
+
+                    isRunning = true;
+                    processFrame();
+
+                    // Default: Public zone
+                    const defaultZone = ZONE_MAP['PUBLIC'];
+                    if (defaultZone) {
+                        currentZone = defaultZone;
+                        currentPolicy = 'public';
+                        elements.zoneName.textContent = 'Public Area';
+                        elements.policyBadge.className = 'policy-badge public';
+                        elements.policyBadge.textContent = '🌐 PUBLIC';
+                        elements.statusDot.className = 'status-dot';
+                        elements.privacyStatus.textContent = '🔒 Privacy ON';
+                        elements.privacyStatus.style.color = '#2ecc71';
+                        blurEnabled = true;
+                    }
+
+                    showToast('🕶️ Tap to scan QR', 'info', 3000);
+
+                    setTimeout(() => {
+                        if (!isScanning) {
+                            startQRScanner();
+                        }
+                    }, 1000);
+
+                    console.log('🕶️ PrivacyLens — Public Privacy Tool');
+                    console.log('📸 Tap to scan QR code');
+
+                } catch (err) {
+                    console.error('Init error:', err);
+                    showToast('❌ Camera error: ' + err.message, 'error', 4000);
+                    setTimeout(init, 5000);
+                }
+            }
+
+            // Start
+            init();
+
+            // Cleanup
+            window.addEventListener('beforeunload', () => {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
+                stopQRScanner();
+            });
+
+        })();
+    </script>
+</body>
+</html>
