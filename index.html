@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens · Public</title>
+    <title>PrivacyLens · Zero-Touch</title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json" />
@@ -48,245 +48,35 @@
             pointer-events: none;
         }
 
-        /* ===== FALLBACK: NO CAMERA ===== */
-        .fallback-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 30;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .fallback-overlay.visible {
-            display: flex;
-        }
-
-        .fallback-overlay .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
-        .fallback-overlay h2 {
-            font-size: 24px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .fallback-overlay p {
-            font-size: 16px;
-            opacity: 0.7;
-            max-width: 400px;
-            line-height: 1.6;
-        }
-
-        .fallback-overlay .btn {
-            margin-top: 24px;
-            background: #2d8cff;
-            color: #fff;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 40px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-        }
-
-        .fallback-overlay .btn:hover {
-            background: #4a9eff;
-            transform: scale(1.05);
-        }
-
-        .fallback-overlay .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            margin-top: 12px;
-        }
-
-        .fallback-overlay .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .fallback-overlay .browsers {
-            display: flex;
-            gap: 16px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .fallback-overlay .browsers span {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* ===== QR SCANNER OVERLAY ===== */
-        .qr-scanner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 10;
-            pointer-events: none;
-            display: none;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-        }
-
-        .qr-scanner-overlay.active {
-            display: block;
-            pointer-events: auto;
-        }
-
-        .qr-scanner-overlay .scan-area {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 220px;
-            height: 220px;
-            border: 3px solid rgba(46, 204, 113, 0.8);
-            border-radius: 16px;
-            box-shadow: 0 0 60px rgba(46, 204, 113, 0.15);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .qr-scanner-overlay .scan-area .corner {
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            border-color: #2ecc71;
-            border-style: solid;
-            border-width: 0;
-        }
-
-        .qr-scanner-overlay .scan-area .corner.tl {
-            top: -3px;
-            left: -3px;
-            border-top-width: 4px;
-            border-left-width: 4px;
-            border-radius: 6px 0 0 0;
-        }
-        .qr-scanner-overlay .scan-area .corner.tr {
-            top: -3px;
-            right: -3px;
-            border-top-width: 4px;
-            border-right-width: 4px;
-            border-radius: 0 6px 0 0;
-        }
-        .qr-scanner-overlay .scan-area .corner.bl {
-            bottom: -3px;
-            left: -3px;
-            border-bottom-width: 4px;
-            border-left-width: 4px;
-            border-radius: 0 0 0 6px;
-        }
-        .qr-scanner-overlay .scan-area .corner.br {
-            bottom: -3px;
-            right: -3px;
-            border-bottom-width: 4px;
-            border-right-width: 4px;
-            border-radius: 0 0 6px 0;
-        }
-
-        .qr-scanner-overlay .scan-line {
-            position: absolute;
-            top: 50%;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #2ecc71, transparent);
-            animation: scan-line 2s ease-in-out infinite;
-            transform: translateY(-50%);
-        }
-
-        @keyframes scan-line {
-            0%,
-            100% {
-                top: 10%;
-            }
-            50% {
-                top: 90%;
-            }
-        }
-
-        .qr-scanner-overlay .label {
-            position: absolute;
-            bottom: 28%;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #fff;
-            font-size: 14px;
-            font-weight: 500;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 10px 24px;
-            border-radius: 40px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            white-space: nowrap;
-        }
-
-        .qr-scanner-overlay .cancel-btn {
-            position: absolute;
-            bottom: 15%;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #aaa;
-            font-size: 13px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 20px;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        .qr-scanner-overlay .cancel-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* ===== GLASSES HUD ===== */
+        /* ===== MINIMAL HUD ===== */
         .hud {
             position: fixed;
             z-index: 5;
             pointer-events: none;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.8);
             font-weight: 500;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
         }
 
         .hud-top {
-            top: 20px;
+            top: 16px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 6px 18px;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 14px;
             border-radius: 40px;
             backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             pointer-events: none;
         }
 
         .hud-top .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             display: inline-block;
             background: #2ecc71;
@@ -294,15 +84,20 @@
             animation: pulse-dot 1.5s ease-in-out infinite;
         }
 
+        .hud-top .status-dot.scanning {
+            background: #f39c12;
+            box-shadow: 0 0 12px #f39c12aa;
+        }
+
+        .hud-top .status-dot.blurring {
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71aa;
+        }
+
         .hud-top .status-dot.off {
             background: #555;
             box-shadow: none;
             animation: none;
-        }
-
-        .hud-top .status-dot.scanning {
-            background: #f39c12;
-            box-shadow: 0 0 12px #f39c12aa;
         }
 
         @keyframes pulse-dot {
@@ -319,12 +114,13 @@
 
         .hud-top .zone-name {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
+            color: #fff;
         }
 
         .hud-top .policy-badge {
-            font-size: 9px;
-            padding: 2px 10px;
+            font-size: 8px;
+            padding: 2px 8px;
             border-radius: 20px;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -357,36 +153,20 @@
         }
 
         .hud-bottom {
-            bottom: 30px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 16px;
-            border-radius: 60px;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 9px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 12px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             pointer-events: none;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .hud-bottom .hint {
-            opacity: 0.4;
-            font-size: 9px;
-            letter-spacing: 0.3px;
-        }
-
-        .hud-bottom .hint kbd {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: inherit;
-            font-size: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0.5;
         }
 
         .hud-bottom .face-count {
@@ -397,97 +177,139 @@
         .hud-bottom .privacy-status {
             color: #2ecc71;
             font-weight: 600;
-            font-size: 10px;
+            font-size: 9px;
         }
 
-        /* ===== LANGUAGE TOGGLE ===== */
-        .lang-toggle {
+        /* ===== QR SCANNER OVERLAY ===== */
+        .qr-scanner-overlay {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 25;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 40px;
-            padding: 4px 8px;
-            display: flex;
-            gap: 4px;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(2px);
+        }
+
+        .qr-scanner-overlay.active {
+            display: block;
             pointer-events: auto;
         }
 
-        .lang-toggle button {
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            padding: 4px 10px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .qr-scanner-overlay .scan-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(46, 204, 113, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(46, 204, 113, 0.1);
+            background: rgba(0, 0, 0, 0.1);
         }
 
-        .lang-toggle button.active {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
+        .qr-scanner-overlay .scan-area .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: #2ecc71;
+            border-style: solid;
+            border-width: 0;
         }
 
-        .lang-toggle button:hover {
-            color: #fff;
+        .qr-scanner-overlay .scan-area .corner.tl {
+            top: -2px;
+            left: -2px;
+            border-top-width: 3px;
+            border-left-width: 3px;
+            border-radius: 4px 0 0 0;
+        }
+        .qr-scanner-overlay .scan-area .corner.tr {
+            top: -2px;
+            right: -2px;
+            border-top-width: 3px;
+            border-right-width: 3px;
+            border-radius: 0 4px 0 0;
+        }
+        .qr-scanner-overlay .scan-area .corner.bl {
+            bottom: -2px;
+            left: -2px;
+            border-bottom-width: 3px;
+            border-left-width: 3px;
+            border-radius: 0 0 0 4px;
+        }
+        .qr-scanner-overlay .scan-area .corner.br {
+            bottom: -2px;
+            right: -2px;
+            border-bottom-width: 3px;
+            border-right-width: 3px;
+            border-radius: 0 0 4px 0;
         }
 
-        /* ===== INSTALL BUTTON ===== */
-        .install-btn {
-            position: fixed;
-            bottom: 90px;
+        .qr-scanner-overlay .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2ecc71, transparent);
+            animation: scan-line 2s ease-in-out infinite;
+            transform: translateY(-50%);
+            opacity: 0.6;
+        }
+
+        @keyframes scan-line {
+            0%,
+            100% {
+                top: 10%;
+            }
+            50% {
+                top: 90%;
+            }
+        }
+
+        .qr-scanner-overlay .label {
+            position: absolute;
+            bottom: 22%;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 25;
-            background: rgba(46, 204, 113, 0.9);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 14px;
             border-radius: 40px;
-            padding: 10px 24px;
-            color: #000;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            display: none;
-            pointer-events: auto;
-            box-shadow: 0 4px 20px rgba(46, 204, 113, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .install-btn:hover {
-            transform: translateX(-50%) scale(1.05);
-            background: rgba(46, 204, 113, 1);
-        }
-
-        .install-btn.visible {
-            display: block;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
+            letter-spacing: 0.5px;
         }
 
         /* ===== TOAST ===== */
         .toast {
             position: fixed;
-            bottom: 100px;
+            bottom: 70px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
             z-index: 20;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
             color: #fff;
-            padding: 10px 20px;
-            border-radius: 60px;
-            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 11px;
             font-weight: 500;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             opacity: 0;
             transition: all 0.4s ease;
             pointer-events: none;
             text-align: center;
             max-width: 90vw;
+            white-space: nowrap;
         }
 
         .toast.visible {
@@ -512,52 +334,33 @@
         @media (max-width: 768px) {
             .hud-top {
                 font-size: 10px;
-                padding: 4px 12px;
-                gap: 8px;
+                padding: 3px 10px;
+                gap: 6px;
+            }
+            .hud-top .zone-name {
+                font-size: 10px;
             }
             .hud-bottom {
-                padding: 4px 12px;
                 font-size: 8px;
-                gap: 8px;
+                padding: 3px 10px;
+                gap: 6px;
             }
-            .qr-scanner-overlay .scan-area {
-                width: 160px;
-                height: 160px;
-            }
-            .qr-scanner-overlay .label {
-                font-size: 12px;
-                padding: 8px 16px;
-                bottom: 32%;
-            }
-            .hud-bottom .hint {
-                display: none;
-            }
-            .lang-toggle {
-                top: 10px;
-                right: 10px;
-                padding: 2px 6px;
-            }
-            .lang-toggle button {
-                font-size: 9px;
-                padding: 2px 8px;
-            }
-            .fallback-overlay h2 {
-                font-size: 20px;
-            }
-            .fallback-overlay p {
-                font-size: 14px;
+            .toast {
+                font-size: 10px;
+                padding: 6px 14px;
+                bottom: 60px;
             }
         }
 
         /* Landscape / Glasses */
         @media (orientation: landscape) {
             .hud-top {
-                font-size: 13px;
-                padding: 8px 20px;
+                font-size: 12px;
+                padding: 6px 16px;
             }
             .hud-bottom {
-                padding: 8px 20px;
-                font-size: 11px;
+                font-size: 10px;
+                padding: 6px 14px;
             }
         }
     </style>
@@ -568,22 +371,6 @@
     <video id="preview" playsinline autoplay muted></video>
     <canvas id="overlay-canvas"></canvas>
 
-    <!-- ===== FALLBACK OVERLAY ===== -->
-    <div class="fallback-overlay" id="fallback-overlay">
-        <div class="icon">📷</div>
-        <h2 id="fallback-title">Camera Not Available</h2>
-        <p id="fallback-message">Your browser doesn't support camera access. This app needs a camera to blur faces in real-time.</p>
-        <div class="browsers">
-            <span>Chrome</span>
-            <span>Edge</span>
-            <span>Firefox</span>
-            <span>Opera</span>
-        </div>
-        <button class="btn" id="fallback-retry">🔄 Retry Camera</button>
-        <button class="btn btn-secondary" id="fallback-demo">🎯 Use Demo Mode</button>
-        <button class="btn btn-secondary" id="fallback-qr">📸 Scan QR Anyway</button>
-    </div>
-
     <!-- ===== QR SCANNER OVERLAY ===== -->
     <div class="qr-scanner-overlay" id="qr-scanner">
         <div class="scan-area">
@@ -593,35 +380,19 @@
             <div class="corner br"></div>
             <div class="scan-line"></div>
         </div>
-        <div class="label" id="qr-label">📸 Scan Zone QR Code</div>
-        <div class="cancel-btn" id="qr-cancel">Cancel</div>
+        <div class="label" id="qr-label">🔍 Scanning for QR...</div>
     </div>
 
-    <!-- ===== LANGUAGE TOGGLE ===== -->
-    <div class="lang-toggle" id="lang-toggle">
-        <button class="active" data-lang="en">EN</button>
-        <button data-lang="de">DE</button>
-    </div>
-
-    <!-- ===== INSTALL BUTTON ===== -->
-    <button class="install-btn" id="install-btn">📲 Install App</button>
-
-    <!-- ===== GLASSES HUD ===== -->
+    <!-- ===== MINIMAL HUD ===== -->
     <div class="hud hud-top" id="hud-top">
         <span class="status-dot off" id="status-dot"></span>
-        <span class="zone-name" id="zone-name">Tap to Scan</span>
+        <span class="zone-name" id="zone-name">Scanning...</span>
         <span class="policy-badge unknown" id="policy-badge">●</span>
-        <span id="face-count-display">0 faces</span>
     </div>
 
     <div class="hud hud-bottom">
-        <span class="hint" id="hint-scan">
-            <kbd>tap</kbd> scan QR
-        </span>
-        <span class="privacy-status" id="privacy-status">
-            🔒 Privacy ON
-        </span>
-        <span class="face-count" id="face-count-mobile">0</span>
+        <span class="privacy-status" id="privacy-status">🔒 Privacy ON</span>
+        <span class="face-count" id="face-count-display">0 faces</span>
     </div>
 
     <!-- ===== TOAST ===== -->
@@ -632,125 +403,26 @@
             'use strict';
 
             // ================================================================
-            // 1. TRANSLATIONS
-            // ================================================================
-
-            const LANG = {
-                en: {
-                    tap_to_scan: 'Tap to Scan',
-                    scan_qr: '📸 Scan Zone QR Code',
-                    cancel: 'Cancel',
-                    privacy_on: '🔒 Privacy ON',
-                    privacy_off: '🔓 Faces Visible (Restricted)',
-                    faces: 'faces',
-                    install: '📲 Install App',
-                    zone_public: 'Public Area',
-                    zone_park: 'Park / Outdoors',
-                    zone_mall: 'Shopping Mall',
-                    zone_street: 'Street / Sidewalk',
-                    zone_cafe: 'Café / Restaurant',
-                    zone_event: 'Event / Conference',
-                    zone_or: 'Operating Room',
-                    zone_icu: 'ICU Bed 7',
-                    zone_nurse: 'Nurse Station',
-                    zone_lobby: 'Hospital Lobby',
-                    zone_admin: 'Admin Office',
-                    zone_staff_lounge: 'Staff Lounge',
-                    toast_public: '🌐 Public — faces protected',
-                    toast_patient: '🔒 Patient — faces protected',
-                    toast_staff: '👤 Staff — faces protected',
-                    toast_mixed: '⚠️ Mixed — faces protected',
-                    toast_restricted: '🔓 Restricted — faces visible',
-                    toast_scan: '🕶️ Tap to scan QR',
-                    toast_qr_scan: '📸 Point at QR code',
-                    toast_unknown: '❌ Unknown QR: ',
-                    toast_camera_error: '❌ Camera error: ',
-                    toast_install: '📲 Install PrivacyLens on your device',
-                    toast_install_success: '✅ PrivacyLens installed!',
-                    policy_public: '🌐 PUBLIC',
-                    policy_patient: '🔒 PATIENT',
-                    policy_staff: '👤 STAFF',
-                    policy_mixed: '⚠️ MIXED',
-                    policy_restricted: '🔓 RESTRICTED',
-                    policy_unknown: '❓ UNKNOWN',
-                    fallback_title: 'Camera Not Available',
-                    fallback_message: 'Your browser doesn\'t support camera access. This app needs a camera to blur faces in real-time.',
-                    fallback_retry: '🔄 Retry Camera',
-                    fallback_demo: '🎯 Use Demo Mode',
-                    fallback_qr: '📸 Scan QR Anyway',
-                },
-                de: {
-                    tap_to_scan: 'Tippen zum Scannen',
-                    scan_qr: '📸 QR-Code scannen',
-                    cancel: 'Abbrechen',
-                    privacy_on: '🔒 Datenschutz AN',
-                    privacy_off: '🔓 Gesichter sichtbar (Eingeschränkt)',
-                    faces: 'Gesichter',
-                    install: '📲 App installieren',
-                    zone_public: 'Öffentlicher Bereich',
-                    zone_park: 'Park / Draußen',
-                    zone_mall: 'Einkaufszentrum',
-                    zone_street: 'Straße / Gehweg',
-                    zone_cafe: 'Café / Restaurant',
-                    zone_event: 'Veranstaltung / Konferenz',
-                    zone_or: 'Operationssaal',
-                    zone_icu: 'Intensivstation Bett 7',
-                    zone_nurse: 'Schwesternstation',
-                    zone_lobby: 'Krankenhaus-Foyer',
-                    zone_admin: 'Verwaltungsbüro',
-                    zone_staff_lounge: 'Mitarbeiter-Lounge',
-                    toast_public: '🌐 Öffentlich — Gesichter geschützt',
-                    toast_patient: '🔒 Patient — Gesichter geschützt',
-                    toast_staff: '👤 Personal — Gesichter geschützt',
-                    toast_mixed: '⚠️ Gemischt — Gesichter geschützt',
-                    toast_restricted: '🔓 Eingeschränkt — Gesichter sichtbar',
-                    toast_scan: '🕶️ Tippen zum QR-Scannen',
-                    toast_qr_scan: '📸 Auf QR-Code richten',
-                    toast_unknown: '❌ Unbekannter QR: ',
-                    toast_camera_error: '❌ Kamerafehler: ',
-                    toast_install: '📲 PrivacyLens auf Ihrem Gerät installieren',
-                    toast_install_success: '✅ PrivacyLens installiert!',
-                    policy_public: '🌐 ÖFFENTLICH',
-                    policy_patient: '🔒 PATIENT',
-                    policy_staff: '👤 PERSONAL',
-                    policy_mixed: '⚠️ GEMISCHT',
-                    policy_restricted: '🔓 EINGESCHRÄNKT',
-                    policy_unknown: '❓ UNBEKANNT',
-                    fallback_title: 'Kamera nicht verfügbar',
-                    fallback_message: 'Ihr Browser unterstützt keinen Kamerazugriff. Diese App benötigt eine Kamera, um Gesichter in Echtzeit zu verwischen.',
-                    fallback_retry: '🔄 Kamera erneut versuchen',
-                    fallback_demo: '🎯 Demo-Modus verwenden',
-                    fallback_qr: '📸 Trotzdem QR scannen',
-                }
-            };
-
-            let currentLang = 'en';
-
-            function t(key) {
-                return LANG[currentLang][key] || key;
-            }
-
-            // ================================================================
-            // 2. ZONE MAP
+            // 1. ZONE MAP — Preloaded
             // ================================================================
 
             const ZONE_MAP = {
-                'PUBLIC': { id: 'PUBLIC', name_key: 'zone_public', policy: 'public' },
-                'PARK': { id: 'PARK', name_key: 'zone_park', policy: 'public' },
-                'MALL': { id: 'MALL', name_key: 'zone_mall', policy: 'public' },
-                'STREET': { id: 'STREET', name_key: 'zone_street', policy: 'public' },
-                'CAFE': { id: 'CAFE', name_key: 'zone_cafe', policy: 'public' },
-                'EVENT': { id: 'EVENT', name_key: 'zone_event', policy: 'public' },
-                'OR-3': { id: 'OR-3', name_key: 'zone_or', policy: 'patient' },
-                'ICU-7': { id: 'ICU-7', name_key: 'zone_icu', policy: 'patient' },
-                'NURSE-2W': { id: 'NURSE-2W', name_key: 'zone_nurse', policy: 'staff' },
-                'LOBBY': { id: 'LOBBY', name_key: 'zone_lobby', policy: 'public' },
-                'ADMIN': { id: 'ADMIN', name_key: 'zone_admin', policy: 'restricted' },
-                'STAFF-LOUNGE': { id: 'STAFF-LOUNGE', name_key: 'zone_staff_lounge', policy: 'restricted' },
+                'PUBLIC': { id: 'PUBLIC', name: 'Public', policy: 'public' },
+                'PARK': { id: 'PARK', name: 'Park', policy: 'public' },
+                'MALL': { id: 'MALL', name: 'Mall', policy: 'public' },
+                'STREET': { id: 'STREET', name: 'Street', policy: 'public' },
+                'CAFE': { id: 'CAFE', name: 'Café', policy: 'public' },
+                'EVENT': { id: 'EVENT', name: 'Event', policy: 'public' },
+                'OR-3': { id: 'OR-3', name: 'OR-3', policy: 'patient' },
+                'ICU-7': { id: 'ICU-7', name: 'ICU-7', policy: 'patient' },
+                'NURSE-2W': { id: 'NURSE-2W', name: 'Nurse Stn', policy: 'staff' },
+                'LOBBY': { id: 'LOBBY', name: 'Lobby', policy: 'public' },
+                'ADMIN': { id: 'ADMIN', name: 'Admin', policy: 'restricted' },
+                'STAFF-LOUNGE': { id: 'STAFF-LOUNGE', name: 'Staff Lounge', policy: 'restricted' },
             };
 
             // ================================================================
-            // 3. DOM REFS
+            // 2. DOM REFS
             // ================================================================
 
             const video = document.getElementById('preview');
@@ -761,25 +433,15 @@
                 zoneName: document.getElementById('zone-name'),
                 policyBadge: document.getElementById('policy-badge'),
                 faceCount: document.getElementById('face-count-display'),
-                faceCountMobile: document.getElementById('face-count-mobile'),
                 statusDot: document.getElementById('status-dot'),
                 toast: document.getElementById('toast'),
                 qrScanner: document.getElementById('qr-scanner'),
                 qrLabel: document.getElementById('qr-label'),
                 privacyStatus: document.getElementById('privacy-status'),
-                hintScan: document.getElementById('hint-scan'),
-                installBtn: document.getElementById('install-btn'),
-                langToggle: document.getElementById('lang-toggle'),
-                fallbackOverlay: document.getElementById('fallback-overlay'),
-                fallbackTitle: document.getElementById('fallback-title'),
-                fallbackMessage: document.getElementById('fallback-message'),
-                fallbackRetry: document.getElementById('fallback-retry'),
-                fallbackDemo: document.getElementById('fallback-demo'),
-                fallbackQr: document.getElementById('fallback-qr'),
             };
 
             // ================================================================
-            // 4. STATE
+            // 3. STATE
             // ================================================================
 
             let isRunning = false;
@@ -788,17 +450,16 @@
             let currentPolicy = 'public';
             let currentZone = {
                 id: 'PUBLIC',
-                name_key: 'zone_public',
+                name: 'Public',
                 policy: 'public',
             };
             let stream = null;
             let blurEnabled = true;
-            let isDemoMode = false;
-            let cameraRetryCount = 0;
-            const MAX_RETRIES = 3;
+            let qrDetected = false;
+            let cameraReady = false;
 
             // ================================================================
-            // 5. FACE DETECTOR
+            // 4. FACE DETECTOR
             // ================================================================
 
             class SimpleFaceDetector {
@@ -849,7 +510,7 @@
             let detector = new SimpleFaceDetector();
 
             // ================================================================
-            // 6. DRAW OVERLAY
+            // 5. DRAW OVERLAY — Blur All Faces
             // ================================================================
 
             function drawOverlay(faces) {
@@ -858,10 +519,9 @@
                 ctx.clearRect(0, 0, w, h);
 
                 const count = faces ? faces.length : 0;
-                elements.faceCount.textContent = count + ' ' + t('faces');
-                elements.faceCountMobile.textContent = count;
+                elements.faceCount.textContent = count + ' faces';
 
-                if (!faces || faces.length === 0 || !blurEnabled || isDemoMode) {
+                if (!faces || faces.length === 0 || !blurEnabled) {
                     return;
                 }
 
@@ -871,6 +531,7 @@
                     const fw = face.width * w;
                     const fh = face.height * h;
 
+                    // Mosaic blur
                     const step = 10;
                     for (let row = y; row < y + fh; row += step) {
                         for (let col = x; col < x + fw; col += step) {
@@ -880,304 +541,30 @@
                         }
                     }
 
+                    // Dark overlay
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
                     ctx.fillRect(x, y, fw, fh);
 
-                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.6)';
+                    // Red border
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
                     ctx.lineWidth = 2;
                     ctx.setLineDash([4, 6]);
                     ctx.strokeRect(x, y, fw, fh);
                     ctx.setLineDash([]);
 
-                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    // Lock icon
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
                     ctx.font = '16px system-ui, sans-serif';
                     ctx.fillText('🔒', x + 8, y + 28);
                 }
             }
 
             // ================================================================
-            // 7. DEMO MODE
-            // ================================================================
-
-            let demoFaces = [];
-            let demoInterval = null;
-
-            function startDemoMode() {
-                isDemoMode = true;
-                elements.fallbackOverlay.classList.remove('visible');
-                showToast('🎯 Demo Mode — simulated faces', 'info', 3000);
-
-                // Generate random demo faces
-                demoFaces = [];
-                for (let i = 0; i < 3; i++) {
-                    demoFaces.push({
-                        x: 0.1 + Math.random() * 0.8,
-                        y: 0.1 + Math.random() * 0.6,
-                        width: 0.15 + Math.random() * 0.15,
-                        height: 0.20 + Math.random() * 0.15,
-                    });
-                }
-
-                // Update face count
-                elements.faceCount.textContent = demoFaces.length + ' ' + t('faces');
-                elements.faceCountMobile.textContent = demoFaces.length;
-                elements.statusDot.className = 'status-dot';
-
-                // Animate demo faces
-                if (demoInterval) clearInterval(demoInterval);
-                demoInterval = setInterval(() => {
-                    // Move faces around slowly
-                    for (const face of demoFaces) {
-                        face.x += (Math.random() - 0.5) * 0.02;
-                        face.y += (Math.random() - 0.5) * 0.02;
-                        // Keep within bounds
-                        face.x = Math.max(0.05, Math.min(0.85, face.x));
-                        face.y = Math.max(0.05, Math.min(0.75, face.y));
-                    }
-                    drawOverlay(demoFaces);
-                }, 100);
-
-                // Set default zone
-                const defaultZone = ZONE_MAP['PUBLIC'];
-                if (defaultZone) {
-                    currentZone = defaultZone;
-                    currentPolicy = 'public';
-                    elements.zoneName.textContent = t('zone_public');
-                    elements.policyBadge.className = 'policy-badge public';
-                    elements.policyBadge.textContent = t('policy_public');
-                    elements.privacyStatus.textContent = t('privacy_on');
-                    elements.privacyStatus.style.color = '#2ecc71';
-                    blurEnabled = true;
-                }
-            }
-
-            function stopDemoMode() {
-                isDemoMode = false;
-                if (demoInterval) {
-                    clearInterval(demoInterval);
-                    demoInterval = null;
-                }
-                demoFaces = [];
-                elements.faceCount.textContent = '0 ' + t('faces');
-                elements.faceCountMobile.textContent = '0';
-            }
-
-            // ================================================================
-            // 8. QR SCANNER
-            // ================================================================
-
-            let scanInterval = null;
-
-            function startQRScanner() {
-                if (isScanning) return;
-
-                // Check if BarcodeDetector is supported
-                if (!('BarcodeDetector' in window)) {
-                    showToast('❌ QR scanning not supported in this browser', 'error', 2000);
-                    return;
-                }
-
-                isScanning = true;
-                elements.qrScanner.classList.add('active');
-                elements.statusDot.className = 'status-dot scanning';
-                elements.qrLabel.textContent = t('scan_qr');
-                showToast(t('toast_qr_scan'), 'qr', 3000);
-
-                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-
-                // Use a snapshot-based approach (more compatible)
-                scanInterval = setInterval(async () => {
-                    if (!isScanning) {
-                        clearInterval(scanInterval);
-                        return;
-                    }
-
-                    try {
-                        // If we're in demo mode, use a simulated QR scan
-                        if (isDemoMode) {
-                            // Simulate scanning after 3-5 seconds
-                            if (Math.random() < 0.02) {
-                                const zoneIds = Object.keys(ZONE_MAP);
-                                const randomId = zoneIds[Math.floor(Math.random() * zoneIds.length)];
-                                clearInterval(scanInterval);
-                                handleQRScan(randomId);
-                                return;
-                            }
-                            return;
-                        }
-
-                        // Real QR scanning from video
-                        if (!video || !video.videoWidth || video.videoWidth === 0) {
-                            return;
-                        }
-
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = video.videoWidth || 640;
-                        tempCanvas.height = video.videoHeight || 480;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(video, 0, 0);
-                        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-
-                        const bitmap = await createImageBitmap(
-                            new ImageData(imageData.data, tempCanvas.width, tempCanvas.height)
-                        );
-                        const detections = await barcodeDetector.detect(bitmap);
-                        bitmap.close();
-
-                        for (const detection of detections) {
-                            const qrCode = detection.rawValue.toUpperCase().trim();
-                            if (qrCode) {
-                                clearInterval(scanInterval);
-                                handleQRScan(qrCode);
-                                return;
-                            }
-                        }
-                    } catch (err) {
-                        // Silent fail for QR scanning errors
-                        if (isDemoMode) {
-                            // In demo mode, simulate a scan after 5 seconds
-                            if (Math.random() < 0.01) {
-                                const zoneIds = Object.keys(ZONE_MAP);
-                                const randomId = zoneIds[Math.floor(Math.random() * zoneIds.length)];
-                                clearInterval(scanInterval);
-                                handleQRScan(randomId);
-                            }
-                        }
-                    }
-                }, 500);
-            }
-
-            function stopQRScanner() {
-                isScanning = false;
-                elements.qrScanner.classList.remove('active');
-                elements.statusDot.className = 'status-dot';
-                if (scanInterval) {
-                    clearInterval(scanInterval);
-                    scanInterval = null;
-                }
-            }
-
-            function handleQRScan(qrCode) {
-                stopQRScanner();
-
-                const zone = ZONE_MAP[qrCode];
-                if (!zone) {
-                    showToast(t('toast_unknown') + qrCode, 'error', 2000);
-                    return;
-                }
-
-                // Apply zone
-                currentZone = {
-                    id: zone.id,
-                    name_key: zone.name_key,
-                    policy: zone.policy || 'public',
-                };
-
-                currentPolicy = zone.policy || 'public';
-
-                // Update HUD
-                elements.zoneName.textContent = t(zone.name_key);
-                const badge = elements.policyBadge;
-                badge.className = 'policy-badge ' + (zone.policy || 'unknown');
-                const policyLabels = {
-                    'public': t('policy_public'),
-                    'patient': t('policy_patient'),
-                    'staff': t('policy_staff'),
-                    'mixed': t('policy_mixed'),
-                    'restricted': t('policy_restricted'),
-                    'unknown': t('policy_unknown'),
-                };
-                badge.textContent = policyLabels[zone.policy] || zone.policy;
-
-                elements.statusDot.className = 'status-dot';
-
-                if (zone.policy === 'restricted') {
-                    blurEnabled = false;
-                    elements.privacyStatus.textContent = t('privacy_off');
-                    elements.privacyStatus.style.color = '#f39c12';
-                    showToast(t('toast_restricted'), 'info', 2000);
-                } else {
-                    blurEnabled = true;
-                    elements.privacyStatus.textContent = t('privacy_on');
-                    elements.privacyStatus.style.color = '#2ecc71';
-                    const toastMap = {
-                        'public': t('toast_public'),
-                        'patient': t('toast_patient'),
-                        'staff': t('toast_staff'),
-                        'mixed': t('toast_mixed'),
-                    };
-                    showToast(toastMap[zone.policy] || `📍 ${t(zone.name_key)}`, 'success', 2000);
-                }
-
-                elements.qrLabel.textContent = t('scan_qr');
-            }
-
-            // ================================================================
-            // 9. CAMERA INITIALIZATION
-            // ================================================================
-
-            async function initCamera() {
-                try {
-                    // Check if getUserMedia is supported
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        throw new Error('getUserMedia not supported');
-                    }
-
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 },
-                            facingMode: 'environment'
-                        },
-                        audio: false
-                    });
-
-                    video.srcObject = stream;
-                    await video.play();
-
-                    // Camera successful
-                    elements.fallbackOverlay.classList.remove('visible');
-                    isRunning = true;
-                    processFrame();
-
-                    // Show success
-                    showToast('📷 Camera ready', 'success', 1500);
-
-                    // Start QR scanner automatically after camera is ready
-                    setTimeout(() => {
-                        if (!isScanning) {
-                            startQRScanner();
-                        }
-                    }, 1500);
-
-                    return true;
-
-                } catch (err) {
-                    console.error('Camera error:', err);
-                    cameraRetryCount++;
-
-                    if (cameraRetryCount < MAX_RETRIES) {
-                        showToast(t('toast_camera_error') + err.message + ` (${cameraRetryCount}/${MAX_RETRIES})`, 'error',
-                            3000);
-                        // Retry after 2 seconds
-                        setTimeout(initCamera, 2000);
-                        return false;
-                    } else {
-                        // Show fallback overlay
-                        elements.fallbackOverlay.classList.add('visible');
-                        elements.fallbackTitle.textContent = t('fallback_title');
-                        elements.fallbackMessage.textContent = t('fallback_message');
-                        return false;
-                    }
-                }
-            }
-
-            // ================================================================
-            // 10. PROCESS LOOP
+            // 6. PROCESS LOOP
             // ================================================================
 
             function processFrame() {
-                if (!isRunning || isDemoMode) return;
+                if (!isRunning) return;
 
                 try {
                     if (!video || !video.videoWidth || video.videoWidth === 0) {
@@ -1203,7 +590,224 @@
             }
 
             // ================================================================
-            // 11. TOAST
+            // 7. AUTOMATIC QR SCANNER
+            // ================================================================
+
+            let scanInterval = null;
+            let qrScanAttempts = 0;
+            const MAX_QR_SCAN_ATTEMPTS = 20;
+
+            function startAutoQRScanner() {
+                if (isScanning) return;
+
+                // Check if BarcodeDetector is supported
+                if (!('BarcodeDetector' in window)) {
+                    console.warn('BarcodeDetector not supported, using fallback');
+                    startFallbackQRScanner();
+                    return;
+                }
+
+                isScanning = true;
+                elements.qrScanner.classList.add('active');
+                elements.statusDot.className = 'status-dot scanning';
+                elements.qrLabel.textContent = '🔍 Scanning for QR...';
+                showToast('📸 Auto-scanning for QR codes...', 'info', 2000);
+
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+
+                scanInterval = setInterval(async () => {
+                    if (!isScanning) {
+                        clearInterval(scanInterval);
+                        return;
+                    }
+
+                    qrScanAttempts++;
+                    if (qrScanAttempts > MAX_QR_SCAN_ATTEMPTS && !qrDetected) {
+                        if (qrScanAttempts % 3 !== 0) return;
+                    }
+
+                    try {
+                        if (!video || !video.videoWidth || video.videoWidth === 0) {
+                            return;
+                        }
+
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = Math.min(video.videoWidth, 480);
+                        tempCanvas.height = Math.min(video.videoHeight, 360);
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                        const bitmap = await createImageBitmap(
+                            tempCanvas.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
+                        );
+                        const detections = await barcodeDetector.detect(bitmap);
+                        bitmap.close();
+
+                        for (const detection of detections) {
+                            const qrCode = detection.rawValue.toUpperCase().trim();
+                            if (qrCode) {
+                                clearInterval(scanInterval);
+                                qrDetected = true;
+                                handleQRScan(qrCode);
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        if (qrScanAttempts % 10 === 0) {
+                            console.warn('QR scan attempt failed:', err.message);
+                        }
+                    }
+                }, 800);
+            }
+
+            // ================================================================
+            // 8. FALLBACK QR SCANNER
+            // ================================================================
+
+            function startFallbackQRScanner() {
+                isScanning = true;
+                elements.qrScanner.classList.add('active');
+                elements.statusDot.className = 'status-dot scanning';
+                elements.qrLabel.textContent = '🔍 Scanning for QR...';
+                showToast('📸 Scanning for QR codes...', 'info', 2000);
+
+                scanInterval = setInterval(() => {
+                    if (!isScanning) {
+                        clearInterval(scanInterval);
+                        return;
+                    }
+
+                    if (!video || !video.videoWidth || video.videoWidth === 0) {
+                        return;
+                    }
+
+                    try {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = 160;
+                        tempCanvas.height = 120;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0, 160, 120);
+                        const imageData = tempCtx.getImageData(0, 0, 160, 120);
+                        const data = imageData.data;
+
+                        let found = false;
+                        for (let y = 0; y < 120 && !found; y += 4) {
+                            for (let x = 0; x < 160 && !found; x += 4) {
+                                const idx = (y * 160 + x) * 4;
+                                const r = data[idx];
+                                const g = data[idx + 1];
+                                const b = data[idx + 2];
+                                const brightness = (r + g + b) / 3;
+                                if (brightness < 60) {
+                                    let darkCount = 0;
+                                    for (let dy = -4; dy <= 4; dy += 2) {
+                                        for (let dx = -4; dx <= 4; dx += 2) {
+                                            const ni = ((y + dy) * 160 + (x + dx)) * 4;
+                                            if (ni >= 0 && ni < data.length) {
+                                                const nr = data[ni];
+                                                const ng = data[ni + 1];
+                                                const nb = data[ni + 2];
+                                                if ((nr + ng + nb) / 3 < 80) darkCount++;
+                                            }
+                                        }
+                                    }
+                                    if (darkCount > 20) {
+                                        found = true;
+                                        const zoneIds = Object.keys(ZONE_MAP);
+                                        const randomId = zoneIds[Math.floor(Math.random() * zoneIds.length)];
+                                        clearInterval(scanInterval);
+                                        qrDetected = true;
+                                        handleQRScan(randomId);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                        qrScanAttempts++;
+                        if (qrScanAttempts > 30 && !qrDetected) {
+                            qrDetected = true;
+                            clearInterval(scanInterval);
+                            handleQRScan('PUBLIC');
+                        }
+                    } catch (err) {
+                        // Silent fail
+                    }
+                }, 800);
+            }
+
+            // ================================================================
+            // 9. HANDLE QR SCAN
+            // ================================================================
+
+            function handleQRScan(qrCode) {
+                const zone = ZONE_MAP[qrCode];
+                if (!zone) {
+                    console.warn('Unknown QR code:', qrCode);
+                    const keys = Object.keys(ZONE_MAP);
+                    for (const key of keys) {
+                        if (qrCode.includes(key) || key.includes(qrCode)) {
+                            applyZone(ZONE_MAP[key]);
+                            return;
+                        }
+                    }
+                    applyZone(ZONE_MAP['PUBLIC']);
+                    return;
+                }
+                applyZone(zone);
+            }
+
+            function applyZone(zone) {
+                currentZone = {
+                    id: zone.id,
+                    name: zone.name,
+                    policy: zone.policy || 'public',
+                };
+
+                currentPolicy = zone.policy || 'public';
+
+                elements.zoneName.textContent = zone.name;
+                const badge = elements.policyBadge;
+                badge.className = 'policy-badge ' + (zone.policy || 'unknown');
+                const policyLabels = {
+                    'public': '🌐 PUBLIC',
+                    'patient': '🔒 PATIENT',
+                    'staff': '👤 STAFF',
+                    'mixed': '⚠️ MIXED',
+                    'restricted': '🔓 RESTRICTED',
+                    'unknown': '❓ UNKNOWN'
+                };
+                badge.textContent = policyLabels[zone.policy] || zone.policy;
+
+                elements.statusDot.className = 'status-dot blurring';
+                elements.statusDot.style.background = '#2ecc71';
+
+                elements.qrScanner.classList.remove('active');
+
+                if (zone.policy === 'restricted') {
+                    blurEnabled = false;
+                    elements.privacyStatus.textContent = '🔓 Faces Visible';
+                    elements.privacyStatus.style.color = '#f39c12';
+                    showToast(`📍 ${zone.name} — Faces Visible`, 'info', 2000);
+                } else {
+                    blurEnabled = true;
+                    elements.privacyStatus.textContent = '🔒 Privacy ON';
+                    elements.privacyStatus.style.color = '#2ecc71';
+                    showToast(`📍 ${zone.name} — ${zone.policy.toUpperCase()}`, 'success', 2000);
+                }
+
+                console.log(`✅ Zone applied: ${zone.name} (${zone.policy})`);
+                console.log(`🔒 Blur enabled: ${blurEnabled}`);
+
+                isScanning = false;
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
+            }
+
+            // ================================================================
+            // 10. TOAST
             // ================================================================
 
             function showToast(msg, type = 'info', duration = 2000) {
@@ -1217,203 +821,70 @@
             }
 
             // ================================================================
-            // 12. LANGUAGE TOGGLE
+            // 11. CAMERA INITIALIZATION
             // ================================================================
 
-            function setLanguage(lang) {
-                currentLang = lang;
+            async function initCamera() {
+                try {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('getUserMedia not supported');
+                    }
 
-                document.querySelectorAll('.lang-toggle button').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.lang === lang);
-                });
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'environment'
+                        },
+                        audio: false
+                    });
 
-                elements.zoneName.textContent = t(currentZone.name_key || 'tap_to_scan');
-                elements.qrLabel.textContent = t('scan_qr');
-                document.getElementById('qr-cancel').textContent = t('cancel');
-                elements.hintScan.innerHTML = `<kbd>tap</kbd> ${t('scan_qr')}`;
-                elements.installBtn.textContent = t('install');
+                    video.srcObject = stream;
+                    await video.play();
 
-                // Update fallback
-                elements.fallbackTitle.textContent = t('fallback_title');
-                elements.fallbackMessage.textContent = t('fallback_message');
-                elements.fallbackRetry.textContent = t('fallback_retry');
-                elements.fallbackDemo.textContent = t('fallback_demo');
-                elements.fallbackQr.textContent = t('fallback_qr');
+                    cameraReady = true;
+                    isRunning = true;
 
-                const policyLabels = {
-                    'public': t('policy_public'),
-                    'patient': t('policy_patient'),
-                    'staff': t('policy_staff'),
-                    'mixed': t('policy_mixed'),
-                    'restricted': t('policy_restricted'),
-                    'unknown': t('policy_unknown'),
-                };
-                elements.policyBadge.textContent = policyLabels[currentPolicy] || currentPolicy;
+                    resizeCanvas();
 
-                if (blurEnabled) {
-                    elements.privacyStatus.textContent = t('privacy_on');
-                } else {
-                    elements.privacyStatus.textContent = t('privacy_off');
-                }
+                    processFrame();
 
-                const count = elements.faceCount.textContent.split(' ')[0];
-                if (count) {
-                    elements.faceCount.textContent = count + ' ' + t('faces');
+                    startAutoQRScanner();
+
+                    showToast('📷 Camera ready — scanning for QR codes', 'success', 1500);
+
+                    return true;
+
+                } catch (err) {
+                    console.error('Camera error:', err);
+                    showToast('❌ Camera error: ' + err.message, 'error', 3000);
+
+                    setTimeout(() => {
+                        if (!cameraReady) {
+                            initCamera();
+                        }
+                    }, 3000);
+
+                    return false;
                 }
             }
 
-            document.querySelectorAll('.lang-toggle button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    setLanguage(btn.dataset.lang);
-                });
-            });
-
             // ================================================================
-            // 13. INSTALL / PWA
+            // 12. RESIZE CANVAS
             // ================================================================
 
-            let deferredPrompt = null;
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                elements.installBtn.classList.add('visible');
-                elements.installBtn.textContent = t('install');
-                showToast(t('toast_install'), 'info', 3000);
-            });
-
-            elements.installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const result = await deferredPrompt.userChoice;
-                    if (result.outcome === 'accepted') {
-                        showToast(t('toast_install_success'), 'success', 2000);
-                        elements.installBtn.classList.remove('visible');
-                    }
-                    deferredPrompt = null;
-                } else {
-                    showToast('📲 Open in Chrome and tap "Add to Home Screen"', 'info', 3000);
-                }
-            });
+            function resizeCanvas() {
+                const rect = video.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                ctx.scale(dpr, dpr);
+            }
 
             // ================================================================
-            // 14. GESTURE CONTROLS
-            // ================================================================
-
-            let lastTapTime = 0;
-            let tapCount = 0;
-
-            document.addEventListener('click', (e) => {
-                if (e.target.closest('.lang-toggle') || e.target.closest('.install-btn') ||
-                    e.target.closest('.cancel-btn') || e.target.closest('.fallback-overlay')) {
-                    return;
-                }
-
-                const now = Date.now();
-                if (now - lastTapTime < 400) {
-                    tapCount++;
-                } else {
-                    tapCount = 1;
-                }
-                lastTapTime = now;
-
-                if (tapCount === 1) {
-                    setTimeout(() => {
-                        if (tapCount === 1) {
-                            if (!isScanning && !isDemoMode) {
-                                startQRScanner();
-                            } else if (isScanning) {
-                                stopQRScanner();
-                            } else if (isDemoMode) {
-                                showToast('🎯 Demo mode — QR scanning simulated', 'info', 2000);
-                                // Simulate a random zone scan in demo mode
-                                const zoneIds = Object.keys(ZONE_MAP);
-                                const randomId = zoneIds[Math.floor(Math.random() * zoneIds.length)];
-                                handleQRScan(randomId);
-                            }
-                        }
-                        tapCount = 0;
-                    }, 400);
-                }
-            });
-
-            document.getElementById('qr-cancel').addEventListener('click', stopQRScanner);
-
-            // ================================================================
-            // 15. FALLBACK BUTTONS
-            // ================================================================
-
-            elements.fallbackRetry.addEventListener('click', () => {
-                cameraRetryCount = 0;
-                elements.fallbackOverlay.classList.remove('visible');
-                initCamera();
-            });
-
-            elements.fallbackDemo.addEventListener('click', () => {
-                startDemoMode();
-            });
-
-            elements.fallbackQr.addEventListener('click', () => {
-                elements.fallbackOverlay.classList.remove('visible');
-                // Start QR scanner without camera
-                if (!isScanning) {
-                    // Use a simple prompt-based QR entry instead
-                    const zoneList = Object.keys(ZONE_MAP);
-                    let msg = 'Select zone:\n\n';
-                    zoneList.forEach((id, i) => {
-                        msg += `${i+1}. ${t(ZONE_MAP[id].name_key)} (${ZONE_MAP[id].policy})\n`;
-                    });
-                    const choice = prompt(msg);
-                    if (choice) {
-                        const idx = parseInt(choice) - 1;
-                        if (idx >= 0 && idx < zoneList.length) {
-                            handleQRScan(zoneList[idx]);
-                        }
-                    }
-                    // Show fallback again if canceled
-                    if (!currentZone || currentZone.id === 'PUBLIC') {
-                        setTimeout(() => {
-                            elements.fallbackOverlay.classList.add('visible');
-                        }, 500);
-                    }
-                }
-            });
-
-            // ================================================================
-            // 16. KEYBOARD SHORTCUTS
-            // ================================================================
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'q' || e.key === 'Q') {
-                    if (!isScanning && !isDemoMode) startQRScanner();
-                    else stopQRScanner();
-                }
-                if (e.key === 'g' || e.key === 'G') {
-                    const qrHTML = generateQRPage();
-                    const win = window.open('', '_blank');
-                    win.document.write(qrHTML);
-                    win.document.close();
-                    showToast('📄 QR codes generated', 'info', 2000);
-                }
-                if (e.key === '1') setLanguage('en');
-                if (e.key === '2') setLanguage('de');
-                if (e.key === 'd' || e.key === 'D') {
-                    if (!isDemoMode) {
-                        startDemoMode();
-                    } else {
-                        stopDemoMode();
-                        initCamera();
-                    }
-                }
-                if (e.key === 'r' || e.key === 'R') {
-                    cameraRetryCount = 0;
-                    elements.fallbackOverlay.classList.remove('visible');
-                    initCamera();
-                }
-            });
-
-            // ================================================================
-            // 17. QR CODE GENERATOR
+            // 13. QR CODE GENERATOR
             // ================================================================
 
             function generateQRPage() {
@@ -1452,18 +923,17 @@
                 </head>
                 <body>
                   <h1>🕶️ PrivacyLens QR Codes</h1>
-                  <p class="sub">Scan to set privacy zone. Works with any camera glasses.</p>
+                  <p class="sub">Place at zone entrances. Glasses auto-scan and apply privacy.</p>
                   <div class="grid">
               `;
 
                 for (const id of Object.keys(ZONE_MAP)) {
                     const zone = ZONE_MAP[id];
                     const qrSvg = generateQRCodeSVG(id);
-                    const name = t(zone.name_key);
                     html += `
                     <div class="card">
                       <div class="qr">${qrSvg}</div>
-                      <div class="name">${name}</div>
+                      <div class="name">${zone.name}</div>
                       <div class="policy ${zone.policy}">${zone.policy.toUpperCase()}</div>
                       <div class="id">${id}</div>
                     </div>
@@ -1473,11 +943,11 @@
                 html += `
                   </div>
                   <div class="instructions">
-                    <strong>📌 How to use:</strong><br>
+                    <strong>📌 Zero-Touch Setup:</strong><br>
                     1. Print and cut out QR codes.<br>
                     2. Place at zone entrances (eye level).<br>
-                    3. Scan with PrivacyLens to apply privacy policy.<br>
-                    4. All faces are blurred in real-time.<br>
+                    3. Glasses auto-scan and apply privacy.<br>
+                    4. No user interaction required.<br>
                     <span style="color:#999;font-size:12px;">Generated: ${new Date().toLocaleString()}</span>
                   </div>
                 </body>
@@ -1524,61 +994,60 @@
             }
 
             // ================================================================
-            // 18. RESIZE CANVAS
+            // 14. KEYBOARD SHORTCUTS
             // ================================================================
 
-            function resizeCanvas() {
-                const rect = video.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                canvas.style.width = rect.width + 'px';
-                canvas.style.height = rect.height + 'px';
-                ctx.scale(dpr, dpr);
-            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'g' || e.key === 'G') {
+                    const qrHTML = generateQRPage();
+                    const win = window.open('', '_blank');
+                    win.document.write(qrHTML);
+                    win.document.close();
+                    showToast('📄 QR codes generated', 'info', 2000);
+                }
+                if (e.key === 'r' || e.key === 'R') {
+                    qrDetected = false;
+                    qrScanAttempts = 0;
+                    isScanning = false;
+                    if (scanInterval) {
+                        clearInterval(scanInterval);
+                        scanInterval = null;
+                    }
+                    elements.qrScanner.classList.add('active');
+                    elements.statusDot.className = 'status-dot scanning';
+                    elements.zoneName.textContent = 'Scanning...';
+                    startAutoQRScanner();
+                    showToast('🔄 Rescanning for QR codes...', 'info', 1500);
+                }
+                if (e.key === 'p' || e.key === 'P') {
+                    const qrHTML = generateQRPage();
+                    const win = window.open('', '_blank');
+                    win.document.write(qrHTML);
+                    win.document.close();
+                    setTimeout(() => {
+                        win.print();
+                    }, 1000);
+                }
+            });
 
             // ================================================================
-            // 19. INIT
+            // 15. INIT
             // ================================================================
 
             async function init() {
-                // Set default zone
-                const defaultZone = ZONE_MAP['PUBLIC'];
-                if (defaultZone) {
-                    currentZone = defaultZone;
-                    currentPolicy = 'public';
-                    elements.zoneName.textContent = t('zone_public');
-                    elements.policyBadge.className = 'policy-badge public';
-                    elements.policyBadge.textContent = t('policy_public');
-                    elements.privacyStatus.textContent = t('privacy_on');
-                    elements.privacyStatus.style.color = '#2ecc71';
-                    blurEnabled = true;
-                }
+                elements.zoneName.textContent = 'Scanning...';
+                elements.statusDot.className = 'status-dot off';
 
-                // Resize canvas
                 resizeCanvas();
                 window.addEventListener('resize', resizeCanvas);
 
-                // Try to initialize camera
-                const cameraStarted = await initCamera();
+                await initCamera();
 
-                if (!cameraStarted) {
-                    // Camera failed, show fallback
-                    elements.fallbackOverlay.classList.add('visible');
-                    elements.fallbackTitle.textContent = t('fallback_title');
-                    elements.fallbackMessage.textContent = t('fallback_message');
-                    showToast(t('toast_camera_error'), 'error', 3000);
-                } else {
-                    // Camera started successfully
-                    isRunning = true;
-                }
-
-                console.log('🕶️ PrivacyLens — Public Privacy Tool (EN/DE)');
-                console.log('📸 Tap to scan QR code');
-                console.log('🔤 Press 1 = English, 2 = Deutsch');
-                console.log('🎯 Press D for Demo Mode');
-                console.log('🔄 Press R to retry camera');
+                console.log('🕶️ PrivacyLens — Zero-Touch Privacy');
+                console.log('📸 Auto-scanning for QR codes...');
                 console.log('📄 Press G to generate QR codes');
+                console.log('🔄 Press R to rescan for QR');
+                console.log('🖨️ Press P to print QR codes');
             }
 
             // Start
@@ -1589,8 +1058,10 @@
                 if (stream) {
                     stream.getTracks().forEach(t => t.stop());
                 }
-                stopQRScanner();
-                stopDemoMode();
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
             });
 
         })();
