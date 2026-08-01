@@ -1,8 +1,8 @@
 const CACHE_NAME = 'privacyLens-v1';
 const ASSETS = [
-    '/PRIVACYLENS/',
-    '/PRIVACYLENS/index.html',
-    '/PRIVACYLENS/manifest.json',
+    '/PUBLICPRIVACYLENS/',
+    '/PUBLICPRIVACYLENS/index.html',
+    '/PUBLICPRIVACYLENS/manifest.json',
 ];
 
 self.addEventListener('install', (e) => {
