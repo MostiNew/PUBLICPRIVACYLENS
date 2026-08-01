@@ -4,7 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens · Passive</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>PrivacyLens</title>
 
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js">
@@ -15,6 +17,9 @@
     <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
     </script>
+
+    <!-- Manifest for PWA -->
+    <link rel="manifest" href="manifest.json" />
 
     <style>
         * {
@@ -76,9 +81,11 @@
             justify-content: center;
             flex-direction: column;
         }
+
         .qr-overlay.hidden {
             opacity: 0;
         }
+
         .qr-overlay .box {
             width: 160px;
             height: 160px;
@@ -86,6 +93,7 @@
             border-radius: 12px;
             position: relative;
         }
+
         .qr-overlay .box .corner {
             position: absolute;
             width: 16px;
@@ -94,6 +102,7 @@
             border-style: solid;
             border-width: 0;
         }
+
         .qr-overlay .box .corner.tl {
             top: -2px;
             left: -2px;
@@ -118,6 +127,7 @@
             border-bottom-width: 2px;
             border-right-width: 2px;
         }
+
         .qr-overlay .box .line {
             position: absolute;
             top: 50%;
@@ -128,6 +138,7 @@
             animation: scanLine 2s ease-in-out infinite;
             transform: translateY(-50%);
         }
+
         @keyframes scanLine {
             0%,
             100% {
@@ -137,6 +148,7 @@
                 top: 90%;
             }
         }
+
         .qr-overlay .label {
             color: rgba(255, 255, 255, 0.12);
             font-size: 10px;
@@ -145,7 +157,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* HUD — Minimal */
+        /* HUD — Minimal, almost invisible */
         .hud {
             position: fixed;
             z-index: 5;
@@ -153,6 +165,7 @@
             color: rgba(255, 255, 255, 0.06);
             font-family: system-ui, sans-serif;
         }
+
         .hud-top {
             top: 10px;
             left: 50%;
@@ -165,6 +178,7 @@
             align-items: center;
             gap: 6px;
         }
+
         .hud-top .dot {
             width: 4px;
             height: 4px;
@@ -172,10 +186,12 @@
             display: inline-block;
             background: #555;
         }
+
         .hud-top .dot.active {
             background: #2ecc71;
             box-shadow: 0 0 8px rgba(46, 204, 113, 0.2);
         }
+
         .hud-bottom {
             bottom: 10px;
             left: 50%;
@@ -189,6 +205,7 @@
             gap: 6px;
             opacity: 0.2;
         }
+
         .hud-bottom .count {
             color: rgba(139, 235, 200, 0.2);
         }
@@ -208,6 +225,7 @@
             background: #0a0e1a;
             overflow: hidden;
         }
+
         #qr-view.visible {
             display: flex;
         }
@@ -274,6 +292,7 @@
             margin-bottom: 16px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
         }
+
         .qr-container #qrcode canvas,
         .qr-container #qrcode img {
             display: block;
@@ -322,6 +341,7 @@
             color: #fff;
             border: none;
         }
+
         .qr-card .btn-primary:hover {
             box-shadow: 0 4px 24px rgba(45, 140, 255, 0.3);
         }
@@ -331,6 +351,7 @@
             color: #fff;
             border: none;
         }
+
         .qr-card .btn-success:hover {
             box-shadow: 0 4px 24px rgba(46, 204, 113, 0.3);
         }
@@ -370,7 +391,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Switch Button */
+        /* Switch Button — For QR generation only */
         .switch-btn {
             position: fixed;
             bottom: 70px;
@@ -502,7 +523,7 @@
 <body>
 
     <!-- ============================================================
-    CAMERA VIEW — Passive Privacy
+    CAMERA VIEW
     ============================================================ -->
     <div id="camera-view">
         <video id="camera" playsinline autoplay muted></video>
@@ -529,14 +550,14 @@
     </div>
 
     <!-- ============================================================
-    QR VIEW — Generator
+    QR VIEW (Generator)
     ============================================================ -->
     <div id="qr-view">
         <div class="qr-card">
             <div class="badge">🔒 Passive Privacy</div>
             <span class="icon">🕶️</span>
             <h1>Privacy<span>Lens</span></h1>
-            <p class="subtitle">Scan this QR code with any camera</p>
+            <p class="subtitle">Scan this QR code to activate</p>
             <div class="qr-container"><div id="qrcode"></div></div>
             <div class="qr-value">PRIVACYLENS-ON</div>
             <div class="btn-group">
@@ -544,19 +565,20 @@
                 <button class="btn btn-success" onclick="window.print()">🖨️ Print</button>
             </div>
             <div class="instructions">
-                <h4>📌 Pure Passive Setup</h4>
+                <h4>📌 Open Once — Never Again</h4>
                 <ol>
-                    <li><strong>Print</strong> this QR code and place at eye level.</li>
-                    <li><strong>Open</strong> PrivacyLens on any camera device.</li>
-                    <li><strong>Zero interaction</strong> — QR seen → privacy activates.</li>
+                    <li><strong>Open</strong> this app on your smart glasses.</li>
+                    <li><strong>Install</strong> as a PWA (Add to Home Screen).</li>
+                    <li><strong>Leave it open</strong> — never close the app.</li>
+                    <li>Glasses see QR → <strong>privacy activates forever</strong>.</li>
                 </ol>
             </div>
-            <div class="footer">One QR · One Purpose · Privacy for Everyone</div>
+            <div class="footer">Open Once · Never Tap · Just Wear</div>
         </div>
     </div>
 
     <!-- ============================================================
-    SWITCH BUTTON (Only for QR generation)
+    SWITCH BUTTON
     ============================================================ -->
     <button class="switch-btn" id="switchBtn">
         <span id="switchIcon">📄</span>
@@ -564,15 +586,11 @@
     </button>
 
     <!-- ============================================================
-    JAVASCRIPT — Passive Privacy Engine
+    JAVASCRIPT
     ============================================================ -->
     <script>
         (function() {
             'use strict';
-
-            // ================================================================
-            // CONFIG — One QR, One Purpose
-            // ================================================================
 
             const TARGET_QR = 'PRIVACYLENS-ON';
             let privacyActive = false;
@@ -582,10 +600,7 @@
             let isQRViewVisible = false;
             let faceDetector = null;
             let mediaPipeReady = false;
-
-            // ================================================================
-            // DOM
-            // ================================================================
+            let qrScanInterval = null;
 
             const video = document.getElementById('camera');
             const canvas = document.getElementById('output');
@@ -643,10 +658,8 @@
             }
 
             // ================================================================
-            // QR SCANNER — Passive, Continuous
+            // QR SCANNER
             // ================================================================
-
-            let qrScanInterval = null;
 
             function startAutoQRScanner() {
                 if (!('BarcodeDetector' in window)) {
@@ -724,7 +737,7 @@
             }
 
             // ================================================================
-            // ACTIVATE PRIVACY — Once, Passive, Forever
+            // ACTIVATE PRIVACY — Once, Forever
             // ================================================================
 
             function activatePrivacy() {
@@ -740,11 +753,11 @@
                     qrScanInterval = null;
                 }
 
-                console.log('✅ Privacy Activated');
+                console.log('✅ Privacy Activated — Faces will blur forever');
             }
 
             // ================================================================
-            // PRIVACY BLUR — Faces Only
+            // PRIVACY BLUR
             // ================================================================
 
             function applyPrivacyMask(faces) {
@@ -847,7 +860,7 @@
             }
 
             // ================================================================
-            // CAMERA — Auto-start
+            // CAMERA
             // ================================================================
 
             async function startCamera() {
@@ -951,7 +964,7 @@
             // INIT
             // ================================================================
 
-            console.log('🕶️ PrivacyLens — Passive Mode');
+            console.log('🕶️ PrivacyLens — Open Once, Never Again');
             console.log('📸 QR: ' + TARGET_QR);
             console.log('⌨️  G=Toggle QR, D=Download PNG, P=Print');
 
