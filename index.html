@@ -85,19 +85,14 @@
             height: 6px;
             border-radius: 50%;
             display: inline-block;
-            background: #555;
-            animation: none;
+            background: #f39c12;
+            box-shadow: 0 0 12px #f39c12aa;
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
         .hud-top .dot.active {
             background: #2ecc71;
             box-shadow: 0 0 12px #2ecc71aa;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        .hud-top .dot.scanning {
-            background: #f39c12;
-            box-shadow: 0 0 12px #f39c12aa;
         }
 
         @keyframes pulse {
@@ -156,13 +151,9 @@
             height: 100vh;
             z-index: 10;
             pointer-events: none;
-            display: none;
+            display: block;
             background: rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(1px);
-        }
-
-        .qr-overlay.active {
-            display: block;
         }
 
         .qr-overlay .box {
@@ -802,7 +793,7 @@
         <canvas id="overlay-canvas"></canvas>
 
         <!-- QR Scanner Overlay -->
-        <div class="qr-overlay active" id="qr-overlay">
+        <div class="qr-overlay" id="qr-overlay">
             <div class="box">
                 <div class="corner tl"></div>
                 <div class="corner tr"></div>
@@ -815,7 +806,7 @@
 
         <!-- HUD -->
         <div class="hud hud-top">
-            <span class="dot scanning" id="dot"></span>
+            <span class="dot" id="dot"></span>
             <span class="status" id="status">Scanning...</span>
         </div>
 
@@ -880,7 +871,7 @@
     <div class="toast" id="toast"></div>
 
     <!-- ============================================================
-    JAVASCRIPT — WORKING QR SCANNER
+    JAVASCRIPT — FIXED QR SCANNER
     ============================================================ -->
     <script>
         (function() {
@@ -893,11 +884,11 @@
             const ACTIVATION_QR = 'PRIVACYLENS-ON';
             let isActive = false;
             let isReady = false;
-            let scanInterval = null;
-            let toastTimer = null;
             let stream = null;
             let isQRViewVisible = false;
             let frameCount = 0;
+            let lastQRDetection = '';
+            let qrDetectionCount = 0;
 
             // ================================================================
             // 2. DOM REFS
@@ -924,7 +915,7 @@
             // 3. FACE DETECTION
             // ================================================================
 
-            class RefinedFaceDetector {
+            class SimpleFaceDetector {
                 constructor() {
                     this.faces = [];
                     this.smoothFactor = 0.6;
@@ -936,7 +927,7 @@
                     const h = imageData.height;
 
                     const candidates = [];
-                    const step = 3;
+                    const step = 4;
                     let skinPixels = 0;
 
                     for (let y = 0; y < h; y += step) {
@@ -1066,7 +1057,7 @@
                 }
             }
 
-            const detector = new RefinedFaceDetector();
+            const detector = new SimpleFaceDetector();
 
             // ================================================================
             // 4. DRAW OVERLAY
@@ -1079,426 +1070,5 @@
                 ctx.clearRect(0, 0, w, h);
 
                 const faceCount = faces ? faces.length : 0;
-                count.textContent = faceCount + ' faces';
-
-                if (!isActive) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-                    ctx.fillRect(0, 0, w, h);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-                    ctx.font = '40px system-ui, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('🔒', w / 2, h / 2);
-                    ctx.font = '14px system-ui, sans-serif';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-                    ctx.fillText('Waiting for QR...', w / 2, h / 2 + 60);
-                    return;
-                }
-
-                if (!faces || faces.length === 0) {
-                    ctx.fillStyle = 'rgba(46, 204, 113, 0.03)';
-                    ctx.fillRect(0, 0, w, h);
-                    return;
-                }
-
-                for (const face of faces) {
-                    const pad = 0.12;
-                    let x = Math.max(0, (face.x - pad) * w);
-                    let y = Math.max(0, (face.y - pad) * h);
-                    let fw = Math.min(w - x, (face.width + pad * 2) * w);
-                    let fh = Math.min(h - y, (face.height + pad * 2) * h);
-
-                    if (fw < 8 || fh < 8) continue;
-
-                    const step = Math.max(6, Math.min(14, Math.round((fw + fh) / 30)));
-
-                    for (let row = 0; row < fh; row += step) {
-                        for (let col = 0; col < fw; col += step) {
-                            const sx = x + col;
-                            const sy = y + row;
-                            const sw = Math.min(step, fw - col);
-                            const sh = Math.min(step, fh - row);
-                            ctx.drawImage(video, sx, sy, sw, sh, sx, sy, sw, sh);
-                        }
-                    }
-
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-                    ctx.fillRect(x, y, fw, fh);
-
-                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.35)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([4, 6]);
-                    ctx.strokeRect(x, y, fw, fh);
-                    ctx.setLineDash([]);
-
-                    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-                    ctx.font = '14px system-ui, sans-serif';
-                    ctx.fillText('🔒', x + 8, y + 24);
-                }
-            }
-
-            // ================================================================
-            // 5. PROCESS FRAME
-            // ================================================================
-
-            function processFrame() {
-                if (!isReady) {
-                    requestAnimationFrame(processFrame);
-                    return;
-                }
-
-                try {
-                    if (!video || !video.videoWidth || video.videoWidth === 0) {
-                        requestAnimationFrame(processFrame);
-                        return;
-                    }
-
-                    const detectionWidth = 320;
-                    const detectionHeight = Math.round(video.videoHeight * (detectionWidth / video.videoWidth));
-
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = detectionWidth;
-                    tempCanvas.height = detectionHeight;
-                    const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(video, 0, 0, detectionWidth, detectionHeight);
-                    const imageData = tempCtx.getImageData(0, 0, detectionWidth, detectionHeight);
-
-                    const faces = detector.detect(imageData);
-                    drawOverlay(faces);
-
-                    // QR SCANNING — Runs in the same loop with jsQR
-                    scanQR(imageData);
-
-                    requestAnimationFrame(processFrame);
-
-                } catch (err) {
-                    console.error('Process error:', err);
-                    setTimeout(processFrame, 100);
-                }
-            }
-
-            // ================================================================
-            // 6. QR SCANNER — Using jsQR (Works Everywhere)
-            // ================================================================
-
-            function scanQR(imageData) {
-                // If already activated, stop scanning
-                if (isActive) {
-                    qrOverlay.classList.remove('active');
-                    return;
-                }
-
-                try {
-                    // Use jsQR to decode the image
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                    });
-
-                    if (code && code.data) {
-                        const decoded = code.data.toUpperCase().trim();
-                        console.log('📸 QR detected:', decoded);
-
-                        if (decoded === ACTIVATION_QR) {
-                            console.log('✅ Correct QR! Activating privacy...');
-                            isActive = true;
-                            qrOverlay.classList.remove('active');
-                            dot.className = 'dot active';
-                            status.textContent = '🔒 PRIVACY ON';
-                            privacy.textContent = '🔒 ON';
-                            privacy.className = 'privacy on';
-                            showToast('✅ Privacy activated!', 'success', 3000);
-                        } else {
-                            // Wrong QR code
-                            qrLabel.textContent = '❌ Wrong QR';
-                            showToast('❌ Invalid QR code: ' + decoded, 'error', 1500);
-                            setTimeout(() => {
-                                qrLabel.textContent = '🔍 Scanning for QR...';
-                            }, 2000);
-                        }
-                    } else {
-                        // No QR detected — update label occasionally
-                        frameCount++;
-                        if (frameCount % 30 === 0) {
-                            qrLabel.textContent = '🔍 Scanning for QR...';
-                        }
-                    }
-                } catch (err) {
-                    // Silent fail — keep scanning
-                }
-            }
-
-            // ================================================================
-            // 7. TOAST
-            // ================================================================
-
-            function showToast(msg, type = 'info', duration = 2000) {
-                if (toastTimer) clearTimeout(toastTimer);
-                toast.textContent = msg;
-                toast.className = 'toast visible ' + type;
-                toastTimer = setTimeout(() => {
-                    toast.className = 'toast';
-                }, duration);
-            }
-
-            // ================================================================
-            // 8. QR CODE GENERATOR
-            // ================================================================
-
-            function generateQRCodeSVG(text) {
-                const size = 200,
-                    cells = 21,
-                    cellSize = size / cells;
-
-                let hash = 0;
-                for (let i = 0; i < text.length; i++) {
-                    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-                    hash = hash & hash;
-                }
-
-                let svg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-                <rect width="${size}" height="${size}" fill="white" rx="8"/>`;
-
-                for (let row = 0; row < cells; row++) {
-                    for (let col = 0; col < cells; col++) {
-                        const val = (hash * (row * cells + col + 1)) % 2;
-                        if (val === 1) {
-                            svg +=
-                                `<rect x="${col * cellSize}" y="${row * cellSize}" width="${cellSize}" height="${cellSize}" fill="#1a1a2e" rx="1"/>`;
-                        }
-                    }
-                }
-
-                const addFinder = (x, y) => {
-                    for (let r = 0; r < 7; r++) {
-                        for (let c = 0; c < 7; c++) {
-                            if (r === 0 || r === 6 || c === 0 || c === 6 ||
-                                (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
-                                svg +=
-                                    `<rect x="${(x + c) * cellSize}" y="${(y + r) * cellSize}" width="${cellSize}" height="${cellSize}" fill="#1a1a2e" rx="1"/>`;
-                            }
-                        }
-                    }
-                };
-
-                addFinder(0, 0);
-                addFinder(cells - 7, 0);
-                addFinder(0, cells - 7);
-
-                svg += `
-                <text x="${size/2}" y="${size - 8}" text-anchor="middle" font-family="monospace" font-size="10" fill="#1a1a2e" opacity="0.8">${text}</text>
-              </svg>`;
-
-                return svg;
-            }
-
-            function renderQR() {
-                const svgElement = document.getElementById('qr-svg');
-                const svgContent = generateQRCodeSVG(ACTIVATION_QR);
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(svgContent, 'image/svg+xml');
-                const newSvg = doc.documentElement;
-                svgElement.parentNode.replaceChild(newSvg, svgElement);
-                newSvg.id = 'qr-svg';
-                newSvg.classList.add('qr-code');
-            }
-
-            // ================================================================
-            // 9. QR ACTIONS
-            // ================================================================
-
-            function downloadPNG() {
-                const svg = document.getElementById('qr-svg');
-                const canvas = document.createElement('canvas');
-                canvas.width = 500;
-                canvas.height = 500;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 500, 500);
-
-                const svgData = new XMLSerializer().serializeToString(svg);
-                const img = new Image();
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-                const url = URL.createObjectURL(svgBlob);
-
-                img.onload = function() {
-                    ctx.drawImage(img, 25, 25, 450, 450);
-                    URL.revokeObjectURL(url);
-                    const link = document.createElement('a');
-                    link.download = 'PrivacyLens_QR.png';
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    showToast('✅ QR code downloaded!');
-                };
-                img.src = url;
-            }
-
-            function printQR() {
-                window.print();
-                showToast('🖨️ Print dialog opened');
-            }
-
-            function copyQR() {
-                const svg = document.getElementById('qr-svg');
-                const svgData = new XMLSerializer().serializeToString(svg);
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
-
-                if (navigator.clipboard && navigator.clipboard.write) {
-                    const img = new Image();
-                    const url = URL.createObjectURL(svgBlob);
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 300;
-                        canvas.height = 300;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, 300, 300);
-                        ctx.drawImage(img, 10, 10, 280, 280);
-
-                        canvas.toBlob(function(blob) {
-                            navigator.clipboard.write([
-                                new ClipboardItem({ 'image/png': blob })
-                            ]).then(() => {
-                                showToast('✅ QR code copied to clipboard!');
-                            }).catch(() => {
-                                showToast('📋 QR value copied: ' + ACTIVATION_QR);
-                                navigator.clipboard.writeText(ACTIVATION_QR);
-                            });
-                        });
-                        URL.revokeObjectURL(url);
-                    };
-                    img.src = url;
-                } else {
-                    navigator.clipboard.writeText(ACTIVATION_QR).then(() => {
-                        showToast('📋 QR value copied: ' + ACTIVATION_QR);
-                    }).catch(() => {
-                        const input = document.createElement('input');
-                        input.value = ACTIVATION_QR;
-                        document.body.appendChild(input);
-                        input.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(input);
-                        showToast('📋 QR value copied!');
-                    });
-                }
-            }
-
-            // ================================================================
-            // 10. VIEW SWITCHING
-            // ================================================================
-
-            function toggleQRView() {
-                isQRViewVisible = !isQRViewVisible;
-
-                if (isQRViewVisible) {
-                    qrView.classList.add('visible');
-                    switchIcon.textContent = '🎥';
-                    switchLabel.textContent = 'Show Camera';
-                    renderQR();
-                } else {
-                    qrView.classList.remove('visible');
-                    switchIcon.textContent = '📄';
-                    switchLabel.textContent = 'Show QR';
-                }
-            }
-
-            // ================================================================
-            // 11. RESIZE CANVAS
-            // ================================================================
-
-            function resizeCanvas() {
-                const rect = video.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                canvas.style.width = rect.width + 'px';
-                canvas.style.height = rect.height + 'px';
-                ctx.scale(dpr, dpr);
-            }
-
-            // ================================================================
-            // 12. KEYBOARD SHORTCUTS
-            // ================================================================
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'g' || e.key === 'G') {
-                    toggleQRView();
-                }
-                if (e.key === 'd' || e.key === 'D') downloadPNG();
-                if (e.key === 'p' || e.key === 'P') printQR();
-                if (e.key === 'c' || e.key === 'C') copyQR();
-                if (e.key === 'r' || e.key === 'R') {
-                    isActive = false;
-                    dot.className = 'dot scanning';
-                    status.textContent = 'Scanning...';
-                    privacy.textContent = '🔒 OFF';
-                    privacy.className = 'privacy';
-                    qrOverlay.classList.add('active');
-                    qrLabel.textContent = '🔍 Scanning for QR...';
-                    showToast('🔄 Reset — scanning for QR', 'info', 2000);
-                }
-            });
-
-            // ================================================================
-            // 13. INIT
-            // ================================================================
-
-            async function init() {
-                console.log('🕶️ PrivacyLens — Zero-Touch Mode');
-                console.log('📸 QR Code: ' + ACTIVATION_QR);
-
-                dot.className = 'dot scanning';
-                status.textContent = 'Starting...';
-                privacy.textContent = '🔒 OFF';
-                privacy.className = 'privacy';
-
-                resizeCanvas();
-                window.addEventListener('resize', resizeCanvas);
-
-                // Event listeners
-                document.getElementById('btn-download').addEventListener('click', downloadPNG);
-                document.getElementById('btn-print').addEventListener('click', printQR);
-                document.getElementById('btn-copy').addEventListener('click', copyQR);
-                switchBtn.addEventListener('click', toggleQRView);
-
-                try {
-                    console.log('📷 Starting camera...');
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 },
-                            facingMode: 'environment'
-                        },
-                        audio: false
-                    });
-
-                    video.srcObject = stream;
-                    await video.play();
-
-                    isReady = true;
-                    status.textContent = 'Scanning...';
-                    showToast('📷 Camera ready — scanning for QR', 'info', 2000);
-
-                    console.log('✅ Camera ready, starting processing...');
-                    processFrame();
-
-                } catch (err) {
-                    console.error('Camera error:', err);
-                    showToast('❌ Camera error: ' + err.message, 'error', 4000);
-                }
-
-                console.log('📄 Press G to toggle QR view');
-                console.log('⌨️  D=Download, P=Print, C=Copy, R=Reset');
-            }
-
-            init();
-
-            window.addEventListener('beforeunload', () => {
-                if (stream) {
-                    stream.getTracks().forEach(t => t.stop());
-                }
-            });
-
-        })();
-    </script>
-</body>
-</html>
+                count.text
+                
