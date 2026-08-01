@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens · Zero-Touch</title>
+    <title>PrivacyLens · One QR</title>
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕶️</text></svg>" />
+    <!-- MediaPipe Face Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin></script>
 
     <style>
-        /* ===== RESET & BASE ===== */
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -48,59 +48,52 @@
             pointer-events: none;
         }
 
-        /* ===== MINIMAL HUD ===== */
+        /* ===== HUD ===== */
         .hud {
             position: fixed;
             z-index: 5;
             pointer-events: none;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
             font-weight: 500;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
         }
 
         .hud-top {
             top: 16px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 11px;
+            font-size: 12px;
             background: rgba(0, 0, 0, 0.5);
-            padding: 4px 14px;
+            padding: 6px 16px;
             border-radius: 40px;
             backdrop-filter: blur(6px);
             border: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
             gap: 10px;
-            pointer-events: none;
         }
 
-        .hud-top .status-dot {
-            width: 6px;
-            height: 6px;
+        .hud-top .dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
-            background: #2ecc71;
-            box-shadow: 0 0 12px #2ecc71aa;
-            animation: pulse-dot 1.5s ease-in-out infinite;
+            background: #555;
+            animation: none;
         }
 
-        .hud-top .status-dot.scanning {
+        .hud-top .dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71aa;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .hud-top .dot.scanning {
             background: #f39c12;
             box-shadow: 0 0 12px #f39c12aa;
         }
 
-        .hud-top .status-dot.blurring {
-            background: #2ecc71;
-            box-shadow: 0 0 12px #2ecc71aa;
-        }
-
-        .hud-top .status-dot.off {
-            background: #555;
-            box-shadow: none;
-            animation: none;
-        }
-
-        @keyframes pulse-dot {
+        @keyframes pulse {
             0%,
             100% {
                 opacity: 1;
@@ -112,76 +105,42 @@
             }
         }
 
-        .hud-top .zone-name {
+        .hud-top .status {
             font-weight: 600;
-            font-size: 12px;
-            color: #fff;
-        }
-
-        .hud-top .policy-badge {
-            font-size: 8px;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        .policy-badge.public {
-            background: #3498db;
-            color: #fff;
-        }
-        .policy-badge.patient {
-            background: #e74c3c;
-            color: #fff;
-        }
-        .policy-badge.staff {
-            background: #2ecc71;
-            color: #000;
-        }
-        .policy-badge.mixed {
-            background: #f39c12;
-            color: #000;
-        }
-        .policy-badge.restricted {
-            background: #8e44ad;
-            color: #fff;
-        }
-        .policy-badge.unknown {
-            background: #555;
-            color: #aaa;
         }
 
         .hud-bottom {
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 9px;
+            font-size: 10px;
             background: rgba(0, 0, 0, 0.3);
-            padding: 4px 12px;
+            padding: 4px 14px;
             border-radius: 40px;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
-            gap: 10px;
-            pointer-events: none;
-            opacity: 0.5;
+            gap: 12px;
+            opacity: 0.6;
         }
 
-        .hud-bottom .face-count {
+        .hud-bottom .count {
             color: #8bebc8;
             font-weight: 600;
         }
 
-        .hud-bottom .privacy-status {
-            color: #2ecc71;
+        .hud-bottom .privacy {
+            color: #e74c3c;
             font-weight: 600;
-            font-size: 9px;
         }
 
-        /* ===== QR SCANNER OVERLAY ===== */
-        .qr-scanner-overlay {
+        .hud-bottom .privacy.on {
+            color: #2ecc71;
+        }
+
+        /* ===== QR OVERLAY ===== */
+        .qr-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -194,12 +153,12 @@
             backdrop-filter: blur(2px);
         }
 
-        .qr-scanner-overlay.active {
+        .qr-overlay.active {
             display: block;
             pointer-events: auto;
         }
 
-        .qr-scanner-overlay .scan-area {
+        .qr-overlay .box {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -208,11 +167,10 @@
             height: 200px;
             border: 2px solid rgba(46, 204, 113, 0.5);
             border-radius: 12px;
-            box-shadow: 0 0 40px rgba(46, 204, 113, 0.1);
             background: rgba(0, 0, 0, 0.1);
         }
 
-        .qr-scanner-overlay .scan-area .corner {
+        .qr-overlay .box .corner {
             position: absolute;
             width: 20px;
             height: 20px;
@@ -221,48 +179,44 @@
             border-width: 0;
         }
 
-        .qr-scanner-overlay .scan-area .corner.tl {
+        .qr-overlay .box .corner.tl {
             top: -2px;
             left: -2px;
             border-top-width: 3px;
             border-left-width: 3px;
-            border-radius: 4px 0 0 0;
         }
-        .qr-scanner-overlay .scan-area .corner.tr {
+        .qr-overlay .box .corner.tr {
             top: -2px;
             right: -2px;
             border-top-width: 3px;
             border-right-width: 3px;
-            border-radius: 0 4px 0 0;
         }
-        .qr-scanner-overlay .scan-area .corner.bl {
+        .qr-overlay .box .corner.bl {
             bottom: -2px;
             left: -2px;
             border-bottom-width: 3px;
             border-left-width: 3px;
-            border-radius: 0 0 0 4px;
         }
-        .qr-scanner-overlay .scan-area .corner.br {
+        .qr-overlay .box .corner.br {
             bottom: -2px;
             right: -2px;
             border-bottom-width: 3px;
             border-right-width: 3px;
-            border-radius: 0 0 4px 0;
         }
 
-        .qr-scanner-overlay .scan-line {
+        .qr-overlay .box .line {
             position: absolute;
             top: 50%;
             left: 10%;
             width: 80%;
             height: 2px;
             background: linear-gradient(90deg, transparent, #2ecc71, transparent);
-            animation: scan-line 2s ease-in-out infinite;
+            animation: scan 2s ease-in-out infinite;
             transform: translateY(-50%);
             opacity: 0.6;
         }
 
-        @keyframes scan-line {
+        @keyframes scan {
             0%,
             100% {
                 top: 10%;
@@ -272,21 +226,18 @@
             }
         }
 
-        .qr-scanner-overlay .label {
+        .qr-overlay .label {
             position: absolute;
-            bottom: 22%;
+            bottom: 25%;
             left: 50%;
             transform: translateX(-50%);
             color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            font-weight: 400;
+            font-size: 12px;
             background: rgba(0, 0, 0, 0.5);
             padding: 4px 14px;
             border-radius: 40px;
-            backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             white-space: nowrap;
-            letter-spacing: 0.5px;
         }
 
         /* ===== TOAST ===== */
@@ -301,14 +252,12 @@
             color: #fff;
             padding: 8px 16px;
             border-radius: 40px;
-            font-size: 11px;
-            font-weight: 500;
+            font-size: 12px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             opacity: 0;
             transition: all 0.4s ease;
             pointer-events: none;
             text-align: center;
-            max-width: 90vw;
             white-space: nowrap;
         }
 
@@ -326,73 +275,56 @@
         .toast.info {
             border-color: #3498db;
         }
-        .toast.qr {
-            border-color: #f39c12;
-        }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .hud-top {
                 font-size: 10px;
-                padding: 3px 10px;
-                gap: 6px;
-            }
-            .hud-top .zone-name {
-                font-size: 10px;
+                padding: 4px 12px;
             }
             .hud-bottom {
                 font-size: 8px;
                 padding: 3px 10px;
-                gap: 6px;
+            }
+            .qr-overlay .box {
+                width: 160px;
+                height: 160px;
             }
             .toast {
                 font-size: 10px;
                 padding: 6px 14px;
                 bottom: 60px;
-            }
-        }
-
-        /* Landscape / Glasses */
-        @media (orientation: landscape) {
-            .hud-top {
-                font-size: 12px;
-                padding: 6px 16px;
-            }
-            .hud-bottom {
-                font-size: 10px;
-                padding: 6px 14px;
+                white-space: normal;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== CAMERA PREVIEW ===== -->
+    <!-- ===== CAMERA ===== -->
     <video id="preview" playsinline autoplay muted></video>
     <canvas id="overlay-canvas"></canvas>
 
-    <!-- ===== QR SCANNER OVERLAY ===== -->
-    <div class="qr-scanner-overlay" id="qr-scanner">
-        <div class="scan-area">
+    <!-- ===== QR OVERLAY ===== -->
+    <div class="qr-overlay" id="qr-overlay">
+        <div class="box">
             <div class="corner tl"></div>
             <div class="corner tr"></div>
             <div class="corner bl"></div>
             <div class="corner br"></div>
-            <div class="scan-line"></div>
+            <div class="line"></div>
         </div>
-        <div class="label" id="qr-label">🔍 Scanning for QR...</div>
+        <div class="label" id="qr-label">🔍 Scan QR to Activate</div>
     </div>
 
-    <!-- ===== MINIMAL HUD ===== -->
-    <div class="hud hud-top" id="hud-top">
-        <span class="status-dot off" id="status-dot"></span>
-        <span class="zone-name" id="zone-name">Scanning...</span>
-        <span class="policy-badge unknown" id="policy-badge">●</span>
+    <!-- ===== HUD ===== -->
+    <div class="hud hud-top">
+        <span class="dot" id="dot"></span>
+        <span class="status" id="status">Loading...</span>
     </div>
 
     <div class="hud hud-bottom">
-        <span class="privacy-status" id="privacy-status">🔒 Privacy ON</span>
-        <span class="face-count" id="face-count-display">0 faces</span>
+        <span class="privacy" id="privacy">🔒 OFF</span>
+        <span class="count" id="count">0 faces</span>
     </div>
 
     <!-- ===== TOAST ===== -->
@@ -403,23 +335,10 @@
             'use strict';
 
             // ================================================================
-            // 1. ZONE MAP — Preloaded
+            // 1. ONE QR CODE
             // ================================================================
 
-            const ZONE_MAP = {
-                'PUBLIC': { id: 'PUBLIC', name: 'Public', policy: 'public' },
-                'PARK': { id: 'PARK', name: 'Park', policy: 'public' },
-                'MALL': { id: 'MALL', name: 'Mall', policy: 'public' },
-                'STREET': { id: 'STREET', name: 'Street', policy: 'public' },
-                'CAFE': { id: 'CAFE', name: 'Café', policy: 'public' },
-                'EVENT': { id: 'EVENT', name: 'Event', policy: 'public' },
-                'OR-3': { id: 'OR-3', name: 'OR-3', policy: 'patient' },
-                'ICU-7': { id: 'ICU-7', name: 'ICU-7', policy: 'patient' },
-                'NURSE-2W': { id: 'NURSE-2W', name: 'Nurse Stn', policy: 'staff' },
-                'LOBBY': { id: 'LOBBY', name: 'Lobby', policy: 'public' },
-                'ADMIN': { id: 'ADMIN', name: 'Admin', policy: 'restricted' },
-                'STAFF-LOUNGE': { id: 'STAFF-LOUNGE', name: 'Staff Lounge', policy: 'restricted' },
-            };
+            const ACTIVATION_QR = 'PRIVACYLENS-ON';
 
             // ================================================================
             // 2. DOM REFS
@@ -429,112 +348,121 @@
             const canvas = document.getElementById('overlay-canvas');
             const ctx = canvas.getContext('2d');
 
-            const elements = {
-                zoneName: document.getElementById('zone-name'),
-                policyBadge: document.getElementById('policy-badge'),
-                faceCount: document.getElementById('face-count-display'),
-                statusDot: document.getElementById('status-dot'),
-                toast: document.getElementById('toast'),
-                qrScanner: document.getElementById('qr-scanner'),
-                qrLabel: document.getElementById('qr-label'),
-                privacyStatus: document.getElementById('privacy-status'),
-            };
+            const dot = document.getElementById('dot');
+            const status = document.getElementById('status');
+            const privacy = document.getElementById('privacy');
+            const count = document.getElementById('count');
+            const toast = document.getElementById('toast');
+            const qrOverlay = document.getElementById('qr-overlay');
+            const qrLabel = document.getElementById('qr-label');
 
             // ================================================================
             // 3. STATE
             // ================================================================
 
-            let isRunning = false;
+            let isActive = false;
             let isScanning = false;
+            let faceDetection = null;
+            let camera = null;
+            let scanInterval = null;
             let toastTimer = null;
-            let currentPolicy = 'public';
-            let currentZone = {
-                id: 'PUBLIC',
-                name: 'Public',
-                policy: 'public',
-            };
-            let stream = null;
-            let blurEnabled = true;
-            let qrDetected = false;
-            let cameraReady = false;
+            let isReady = false;
 
             // ================================================================
-            // 4. FACE DETECTOR
+            // 4. MEDIAPIPE FACE DETECTION — FAST & ACCURATE
             // ================================================================
 
-            class SimpleFaceDetector {
-                detect(imageData) {
-                    const faces = [];
-                    const data = imageData.data;
-                    const w = imageData.width;
-                    const h = imageData.height;
-
-                    for (let y = 0; y < h; y += 8) {
-                        for (let x = 0; x < w; x += 8) {
-                            const idx = (y * w + x) * 4;
-                            const r = data[idx];
-                            const g = data[idx + 1];
-                            const b = data[idx + 2];
-
-                            const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
-                            const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
-
-                            if (cr >= 133 && cr <= 173 && cb >= 77 && cb <= 127) {
-                                faces.push({
-                                    x: x / w,
-                                    y: y / h,
-                                    width: 0.20,
-                                    height: 0.28,
-                                });
-                                break;
-                            }
-                        }
-                        if (faces.length > 8) break;
+            function initFaceDetection() {
+                faceDetection = new FaceDetection({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
                     }
+                });
 
-                    const unique = [];
-                    for (const f of faces) {
-                        let dup = false;
-                        for (const u of unique) {
-                            const dx = f.x - u.x;
-                            const dy = f.y - u.y;
-                            if (dx * dx + dy * dy < 0.01) dup = true;
+                faceDetection.setOptions({
+                    model: 'short', // 'short' = faster, 'full' = more accurate
+                    minDetectionConfidence: 0.65,
+                    selfieMode: true,
+                });
+
+                faceDetection.onResults(onFaceResults);
+
+                // Start camera
+                camera = new Camera(video, {
+                    onFrame: async () => {
+                        if (faceDetection && isReady) {
+                            await faceDetection.send({ image: video });
                         }
-                        if (!dup) unique.push(f);
-                    }
+                    },
+                    width: 640,
+                    height: 480,
+                    facingMode: 'environment',
+                });
 
-                    return unique.slice(0, 12);
-                }
+                camera.start().then(() => {
+                    isReady = true;
+                    status.textContent = 'Scan QR';
+                    dot.className = 'dot scanning';
+                    showToast('📷 Camera ready — scan QR to activate', 'info', 3000);
+                    startQRScanner();
+                }).catch(err => {
+                    console.error('Camera error:', err);
+                    showToast('❌ Camera error: ' + err.message, 'error', 4000);
+                });
             }
 
-            let detector = new SimpleFaceDetector();
-
             // ================================================================
-            // 5. DRAW OVERLAY — Blur All Faces
+            // 5. DRAW OVERLAY — FAST BLUR WITH MEDIAPIPE RESULTS
             // ================================================================
 
-            function drawOverlay(faces) {
+            function onFaceResults(results) {
+                const detections = results.detections || [];
                 const w = canvas.width / (window.devicePixelRatio || 1);
                 const h = canvas.height / (window.devicePixelRatio || 1);
+
+                // Clear canvas
                 ctx.clearRect(0, 0, w, h);
 
-                const count = faces ? faces.length : 0;
-                elements.faceCount.textContent = count + ' faces';
+                // Update face count
+                const faceCount = detections.length;
+                count.textContent = faceCount + ' faces';
 
-                if (!faces || faces.length === 0 || !blurEnabled) {
+                // If privacy is NOT active, show a lock overlay
+                if (!isActive) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.font = '40px system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🔒', w / 2, h / 2);
+                    ctx.font = '14px system-ui, sans-serif';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.fillText('Scan QR to activate', w / 2, h / 2 + 60);
                     return;
                 }
 
-                for (const face of faces) {
-                    const x = face.x * w;
-                    const y = face.y * h;
-                    const fw = face.width * w;
-                    const fh = face.height * h;
+                // Privacy ACTIVE — blur faces
+                if (detections.length === 0) return;
 
-                    // Mosaic blur
-                    const step = 10;
-                    for (let row = y; row < y + fh; row += step) {
-                        for (let col = x; col < x + fw; col += step) {
+                for (const detection of detections) {
+                    const bbox = detection.boundingBox;
+                    const x = bbox.xMin * w;
+                    const y = bbox.yMin * h;
+                    const fw = (bbox.xMax - bbox.xMin) * w;
+                    const fh = (bbox.yMax - bbox.yMin) * h;
+
+                    // Expand box slightly for better coverage
+                    const pad = 0.1;
+                    const px = x - fw * pad;
+                    const py = y - fh * pad;
+                    const pw = fw * (1 + pad * 2);
+                    const ph = fh * (1 + pad * 2);
+
+                    // Mosaic blur (faster than Gaussian)
+                    const step = 12;
+                    for (let row = py; row < py + ph; row += step) {
+                        for (let col = px; col < px + pw; col += step) {
                             const hue = ((row * 0.3 + col * 0.7 + 180) % 360);
                             ctx.fillStyle = `hsl(${hue}, 40%, 50%)`;
                             ctx.fillRect(col, row, step, step);
@@ -542,76 +470,42 @@
                     }
 
                     // Dark overlay
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillRect(x, y, fw, fh);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                    ctx.fillRect(px, py, pw, ph);
 
-                    // Red border
+                    // Red privacy border
                     ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
                     ctx.lineWidth = 2;
                     ctx.setLineDash([4, 6]);
-                    ctx.strokeRect(x, y, fw, fh);
+                    ctx.strokeRect(px, py, pw, ph);
                     ctx.setLineDash([]);
 
                     // Lock icon
                     ctx.fillStyle = 'rgba(255,255,255,0.4)';
                     ctx.font = '16px system-ui, sans-serif';
-                    ctx.fillText('🔒', x + 8, y + 28);
+                    ctx.fillText('🔒', px + 8, py + 28);
                 }
             }
 
             // ================================================================
-            // 6. PROCESS LOOP
+            // 6. QR SCANNER
             // ================================================================
 
-            function processFrame() {
-                if (!isRunning) return;
-
-                try {
-                    if (!video || !video.videoWidth || video.videoWidth === 0) {
-                        requestAnimationFrame(processFrame);
-                        return;
-                    }
-
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = 320;
-                    tempCanvas.height = 240;
-                    const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(video, 0, 0, 320, 240);
-                    const imageData = tempCtx.getImageData(0, 0, 320, 240);
-
-                    const faces = detector.detect(imageData);
-                    drawOverlay(faces);
-                    requestAnimationFrame(processFrame);
-
-                } catch (err) {
-                    console.error('Process error:', err);
-                    setTimeout(processFrame, 100);
-                }
-            }
-
-            // ================================================================
-            // 7. AUTOMATIC QR SCANNER
-            // ================================================================
-
-            let scanInterval = null;
-            let qrScanAttempts = 0;
-            const MAX_QR_SCAN_ATTEMPTS = 20;
-
-            function startAutoQRScanner() {
+            function startQRScanner() {
                 if (isScanning) return;
 
-                // Check if BarcodeDetector is supported
                 if (!('BarcodeDetector' in window)) {
-                    console.warn('BarcodeDetector not supported, using fallback');
-                    startFallbackQRScanner();
+                    showToast('⚠️ QR scanning not supported', 'error', 3000);
+                    showManualActivation();
                     return;
                 }
 
                 isScanning = true;
-                elements.qrScanner.classList.add('active');
-                elements.statusDot.className = 'status-dot scanning';
-                elements.qrLabel.textContent = '🔍 Scanning for QR...';
-                showToast('📸 Auto-scanning for QR codes...', 'info', 2000);
+                qrOverlay.classList.add('active');
+                qrLabel.textContent = '🔍 Scan QR to Activate';
+                dot.className = 'dot scanning';
+                status.textContent = 'Scanning...';
+                showToast('📸 Scan the QR code to activate privacy', 'info', 3000);
 
                 const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
 
@@ -621,15 +515,8 @@
                         return;
                     }
 
-                    qrScanAttempts++;
-                    if (qrScanAttempts > MAX_QR_SCAN_ATTEMPTS && !qrDetected) {
-                        if (qrScanAttempts % 3 !== 0) return;
-                    }
-
                     try {
-                        if (!video || !video.videoWidth || video.videoWidth === 0) {
-                            return;
-                        }
+                        if (!video || !video.videoWidth || video.videoWidth === 0) return;
 
                         const tempCanvas = document.createElement('canvas');
                         tempCanvas.width = Math.min(video.videoWidth, 480);
@@ -644,162 +531,38 @@
                         bitmap.close();
 
                         for (const detection of detections) {
-                            const qrCode = detection.rawValue.toUpperCase().trim();
-                            if (qrCode) {
+                            const code = detection.rawValue.toUpperCase().trim();
+                            if (code === ACTIVATION_QR) {
                                 clearInterval(scanInterval);
-                                qrDetected = true;
-                                handleQRScan(qrCode);
+                                activatePrivacy();
                                 return;
+                            } else {
+                                qrLabel.textContent = '❌ Wrong QR — use the official one';
+                                showToast('❌ This QR is not valid for PrivacyLens', 'error', 1500);
                             }
                         }
                     } catch (err) {
-                        if (qrScanAttempts % 10 === 0) {
-                            console.warn('QR scan attempt failed:', err.message);
-                        }
+                        // Silent fail — keep scanning
                     }
-                }, 800);
+                }, 500);
             }
 
             // ================================================================
-            // 8. FALLBACK QR SCANNER
+            // 7. ACTIVATE PRIVACY
             // ================================================================
 
-            function startFallbackQRScanner() {
-                isScanning = true;
-                elements.qrScanner.classList.add('active');
-                elements.statusDot.className = 'status-dot scanning';
-                elements.qrLabel.textContent = '🔍 Scanning for QR...';
-                showToast('📸 Scanning for QR codes...', 'info', 2000);
-
-                scanInterval = setInterval(() => {
-                    if (!isScanning) {
-                        clearInterval(scanInterval);
-                        return;
-                    }
-
-                    if (!video || !video.videoWidth || video.videoWidth === 0) {
-                        return;
-                    }
-
-                    try {
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = 160;
-                        tempCanvas.height = 120;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(video, 0, 0, 160, 120);
-                        const imageData = tempCtx.getImageData(0, 0, 160, 120);
-                        const data = imageData.data;
-
-                        let found = false;
-                        for (let y = 0; y < 120 && !found; y += 4) {
-                            for (let x = 0; x < 160 && !found; x += 4) {
-                                const idx = (y * 160 + x) * 4;
-                                const r = data[idx];
-                                const g = data[idx + 1];
-                                const b = data[idx + 2];
-                                const brightness = (r + g + b) / 3;
-                                if (brightness < 60) {
-                                    let darkCount = 0;
-                                    for (let dy = -4; dy <= 4; dy += 2) {
-                                        for (let dx = -4; dx <= 4; dx += 2) {
-                                            const ni = ((y + dy) * 160 + (x + dx)) * 4;
-                                            if (ni >= 0 && ni < data.length) {
-                                                const nr = data[ni];
-                                                const ng = data[ni + 1];
-                                                const nb = data[ni + 2];
-                                                if ((nr + ng + nb) / 3 < 80) darkCount++;
-                                            }
-                                        }
-                                    }
-                                    if (darkCount > 20) {
-                                        found = true;
-                                        const zoneIds = Object.keys(ZONE_MAP);
-                                        const randomId = zoneIds[Math.floor(Math.random() * zoneIds.length)];
-                                        clearInterval(scanInterval);
-                                        qrDetected = true;
-                                        handleQRScan(randomId);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-
-                        qrScanAttempts++;
-                        if (qrScanAttempts > 30 && !qrDetected) {
-                            qrDetected = true;
-                            clearInterval(scanInterval);
-                            handleQRScan('PUBLIC');
-                        }
-                    } catch (err) {
-                        // Silent fail
-                    }
-                }, 800);
-            }
-
-            // ================================================================
-            // 9. HANDLE QR SCAN
-            // ================================================================
-
-            function handleQRScan(qrCode) {
-                const zone = ZONE_MAP[qrCode];
-                if (!zone) {
-                    console.warn('Unknown QR code:', qrCode);
-                    const keys = Object.keys(ZONE_MAP);
-                    for (const key of keys) {
-                        if (qrCode.includes(key) || key.includes(qrCode)) {
-                            applyZone(ZONE_MAP[key]);
-                            return;
-                        }
-                    }
-                    applyZone(ZONE_MAP['PUBLIC']);
-                    return;
-                }
-                applyZone(zone);
-            }
-
-            function applyZone(zone) {
-                currentZone = {
-                    id: zone.id,
-                    name: zone.name,
-                    policy: zone.policy || 'public',
-                };
-
-                currentPolicy = zone.policy || 'public';
-
-                elements.zoneName.textContent = zone.name;
-                const badge = elements.policyBadge;
-                badge.className = 'policy-badge ' + (zone.policy || 'unknown');
-                const policyLabels = {
-                    'public': '🌐 PUBLIC',
-                    'patient': '🔒 PATIENT',
-                    'staff': '👤 STAFF',
-                    'mixed': '⚠️ MIXED',
-                    'restricted': '🔓 RESTRICTED',
-                    'unknown': '❓ UNKNOWN'
-                };
-                badge.textContent = policyLabels[zone.policy] || zone.policy;
-
-                elements.statusDot.className = 'status-dot blurring';
-                elements.statusDot.style.background = '#2ecc71';
-
-                elements.qrScanner.classList.remove('active');
-
-                if (zone.policy === 'restricted') {
-                    blurEnabled = false;
-                    elements.privacyStatus.textContent = '🔓 Faces Visible';
-                    elements.privacyStatus.style.color = '#f39c12';
-                    showToast(`📍 ${zone.name} — Faces Visible`, 'info', 2000);
-                } else {
-                    blurEnabled = true;
-                    elements.privacyStatus.textContent = '🔒 Privacy ON';
-                    elements.privacyStatus.style.color = '#2ecc71';
-                    showToast(`📍 ${zone.name} — ${zone.policy.toUpperCase()}`, 'success', 2000);
-                }
-
-                console.log(`✅ Zone applied: ${zone.name} (${zone.policy})`);
-                console.log(`🔒 Blur enabled: ${blurEnabled}`);
-
+            function activatePrivacy() {
+                isActive = true;
                 isScanning = false;
+                qrOverlay.classList.remove('active');
+
+                dot.className = 'dot active';
+                status.textContent = '🔒 PRIVACY ON';
+                privacy.textContent = '🔒 ON';
+                privacy.className = 'privacy on';
+
+                showToast('✅ Privacy activated — all faces blurred!', 'success', 3000);
+
                 if (scanInterval) {
                     clearInterval(scanInterval);
                     scanInterval = null;
@@ -807,12 +570,27 @@
             }
 
             // ================================================================
-            // 10. TOAST
+            // 8. FALLBACK — Manual Activation
+            // ================================================================
+
+            function showManualActivation() {
+                qrOverlay.classList.add('active');
+                qrLabel.textContent = '📲 Tap to Activate Privacy';
+                dot.className = 'dot scanning';
+                status.textContent = 'Tap to Activate';
+
+                qrOverlay.addEventListener('click', function handler() {
+                    activatePrivacy();
+                    qrOverlay.removeEventListener('click', handler);
+                });
+            }
+
+            // ================================================================
+            // 9. TOAST
             // ================================================================
 
             function showToast(msg, type = 'info', duration = 2000) {
                 if (toastTimer) clearTimeout(toastTimer);
-                const toast = elements.toast;
                 toast.textContent = msg;
                 toast.className = 'toast visible ' + type;
                 toastTimer = setTimeout(() => {
@@ -821,143 +599,52 @@
             }
 
             // ================================================================
-            // 11. CAMERA INITIALIZATION
-            // ================================================================
-
-            async function initCamera() {
-                try {
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        throw new Error('getUserMedia not supported');
-                    }
-
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 },
-                            facingMode: 'environment'
-                        },
-                        audio: false
-                    });
-
-                    video.srcObject = stream;
-                    await video.play();
-
-                    cameraReady = true;
-                    isRunning = true;
-
-                    resizeCanvas();
-
-                    processFrame();
-
-                    startAutoQRScanner();
-
-                    showToast('📷 Camera ready — scanning for QR codes', 'success', 1500);
-
-                    return true;
-
-                } catch (err) {
-                    console.error('Camera error:', err);
-                    showToast('❌ Camera error: ' + err.message, 'error', 3000);
-
-                    setTimeout(() => {
-                        if (!cameraReady) {
-                            initCamera();
-                        }
-                    }, 3000);
-
-                    return false;
-                }
-            }
-
-            // ================================================================
-            // 12. RESIZE CANVAS
-            // ================================================================
-
-            function resizeCanvas() {
-                const rect = video.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                canvas.style.width = rect.width + 'px';
-                canvas.style.height = rect.height + 'px';
-                ctx.scale(dpr, dpr);
-            }
-
-            // ================================================================
-            // 13. QR CODE GENERATOR
+            // 10. QR CODE GENERATOR
             // ================================================================
 
             function generateQRPage() {
-                let html = `
+                const html = `
                 <!DOCTYPE html>
                 <html>
                 <head>
-                  <title>PrivacyLens QR Codes</title>
-                  <style>
-                    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 40px; }
-                    h1 { font-size: 24px; margin-bottom: 4px; }
-                    .sub { color: #666; margin-bottom: 30px; }
-                    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-                    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; border: 1px solid #e0e0e0; }
-                    .qr { width: 140px; height: 140px; margin: 0 auto 12px; background: #fff; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 8px; }
-                    .qr svg { width: 100%; height: 100%; }
-                    .name { font-weight: 600; font-size: 14px; }
-                    .policy { font-size: 12px; padding: 2px 12px; border-radius: 20px; display: inline-block; margin: 6px 0; }
-                    .policy.public { background: #eaf2f8; color: #2980b9; }
-                    .policy.patient { background: #fee; color: #c0392b; }
-                    .policy.staff { background: #efe; color: #27ae60; }
-                    .policy.mixed { background: #fef9e7; color: #f39c12; }
-                    .policy.restricted { background: #f4ecf7; color: #8e44ad; }
-                    .id { font-size: 10px; color: #999; margin-top: 4px; }
-                    .instructions { margin-top: 40px; padding: 20px; background: #e8f4fd; border-radius: 8px; border: 1px solid #b8d4e8; }
-                    .instructions strong { color: #1a5276; }
-                    @media print {
-                      body { padding: 20px; }
-                      .card { break-inside: avoid; }
-                      .instructions { display: none; }
-                    }
-                    @media (max-width: 768px) {
-                      .grid { grid-template-columns: repeat(2, 1fr); }
-                    }
-                  </style>
+                    <title>PrivacyLens Activation QR</title>
+                    <style>
+                        body { font-family: system-ui, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+                        .card { background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; max-width: 400px; width: 100%; }
+                        .qr { width: 200px; height: 200px; margin: 0 auto 20px; background: #fff; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 8px; }
+                        .qr svg { width: 100%; height: 100%; }
+                        h1 { font-size: 20px; margin-bottom: 4px; }
+                        .sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+                        .instructions { background: #e8f4fd; padding: 16px; border-radius: 8px; border: 1px solid #b8d4e8; font-size: 13px; text-align: left; }
+                        .instructions strong { color: #1a5276; }
+                        @media print {
+                            body { background: #fff; padding: 0; }
+                            .card { box-shadow: none; padding: 20px; }
+                            .instructions { background: #f5f5f5; border-color: #ddd; }
+                        }
+                    </style>
                 </head>
                 <body>
-                  <h1>🕶️ PrivacyLens QR Codes</h1>
-                  <p class="sub">Place at zone entrances. Glasses auto-scan and apply privacy.</p>
-                  <div class="grid">
-              `;
-
-                for (const id of Object.keys(ZONE_MAP)) {
-                    const zone = ZONE_MAP[id];
-                    const qrSvg = generateQRCodeSVG(id);
-                    html += `
                     <div class="card">
-                      <div class="qr">${qrSvg}</div>
-                      <div class="name">${zone.name}</div>
-                      <div class="policy ${zone.policy}">${zone.policy.toUpperCase()}</div>
-                      <div class="id">${id}</div>
+                        <h1>🕶️ PrivacyLens</h1>
+                        <p class="sub">Scan this QR code to activate privacy</p>
+                        <div class="qr">${generateQRCodeSVG('PRIVACYLENS-ON')}</div>
+                        <div class="instructions">
+                            <strong>📌 How to use:</strong><br>
+                            1. Print and place this QR code at your entrance.<br>
+                            2. Open PrivacyLens on your smart glasses.<br>
+                            3. Point at this QR code.<br>
+                            4. <strong>All faces will be blurred automatically!</strong>
+                        </div>
                     </div>
-                  `;
-                }
-
-                html += `
-                  </div>
-                  <div class="instructions">
-                    <strong>📌 Zero-Touch Setup:</strong><br>
-                    1. Print and cut out QR codes.<br>
-                    2. Place at zone entrances (eye level).<br>
-                    3. Glasses auto-scan and apply privacy.<br>
-                    4. No user interaction required.<br>
-                    <span style="color:#999;font-size:12px;">Generated: ${new Date().toLocaleString()}</span>
-                  </div>
                 </body>
                 </html>
-              `;
+                `;
                 return html;
             }
 
             function generateQRCodeSVG(text) {
-                const size = 140,
+                const size = 200,
                     cells = 21,
                     cellSize = size / cells;
                 let hash = 0;
@@ -994,7 +681,21 @@
             }
 
             // ================================================================
-            // 14. KEYBOARD SHORTCUTS
+            // 11. RESIZE CANVAS
+            // ================================================================
+
+            function resizeCanvas() {
+                const rect = video.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                ctx.scale(dpr, dpr);
+            }
+
+            // ================================================================
+            // 12. KEYBOARD SHORTCUTS
             // ================================================================
 
             document.addEventListener('keydown', (e) => {
@@ -1003,65 +704,55 @@
                     const win = window.open('', '_blank');
                     win.document.write(qrHTML);
                     win.document.close();
-                    showToast('📄 QR codes generated', 'info', 2000);
-                }
-                if (e.key === 'r' || e.key === 'R') {
-                    qrDetected = false;
-                    qrScanAttempts = 0;
-                    isScanning = false;
-                    if (scanInterval) {
-                        clearInterval(scanInterval);
-                        scanInterval = null;
-                    }
-                    elements.qrScanner.classList.add('active');
-                    elements.statusDot.className = 'status-dot scanning';
-                    elements.zoneName.textContent = 'Scanning...';
-                    startAutoQRScanner();
-                    showToast('🔄 Rescanning for QR codes...', 'info', 1500);
+                    showToast('📄 QR code generated — print it!', 'success', 2000);
                 }
                 if (e.key === 'p' || e.key === 'P') {
                     const qrHTML = generateQRPage();
                     const win = window.open('', '_blank');
                     win.document.write(qrHTML);
                     win.document.close();
-                    setTimeout(() => {
-                        win.print();
-                    }, 1000);
+                    setTimeout(() => win.print(), 1000);
+                }
+                if (e.key === 'r' || e.key === 'R') {
+                    isActive = false;
+                    dot.className = 'dot scanning';
+                    status.textContent = 'Scanning...';
+                    privacy.textContent = '🔒 OFF';
+                    privacy.className = 'privacy';
+                    showToast('🔄 Reset — scan QR to activate', 'info', 2000);
+                    if (!isScanning) startQRScanner();
                 }
             });
 
             // ================================================================
-            // 15. INIT
+            // 13. INIT
             // ================================================================
 
-            async function init() {
-                elements.zoneName.textContent = 'Scanning...';
-                elements.statusDot.className = 'status-dot off';
+            function init() {
+                dot.className = 'dot';
+                status.textContent = 'Loading MediaPipe...';
+                privacy.textContent = '🔒 OFF';
+                privacy.className = 'privacy';
 
                 resizeCanvas();
                 window.addEventListener('resize', resizeCanvas);
 
-                await initCamera();
+                // Load MediaPipe
+                initFaceDetection();
 
-                console.log('🕶️ PrivacyLens — Zero-Touch Privacy');
-                console.log('📸 Auto-scanning for QR codes...');
-                console.log('📄 Press G to generate QR codes');
-                console.log('🔄 Press R to rescan for QR');
-                console.log('🖨️ Press P to print QR codes');
+                console.log('🕶️ PrivacyLens — MediaPipe Face Detection');
+                console.log('📸 Scan QR: ' + ACTIVATION_QR);
+                console.log('📄 Press G to generate QR code');
+                console.log('🔄 Press R to reset');
+                console.log('🖨️ Press P to print QR code');
             }
 
-            // Start
             init();
 
             // Cleanup
             window.addEventListener('beforeunload', () => {
-                if (stream) {
-                    stream.getTracks().forEach(t => t.stop());
-                }
-                if (scanInterval) {
-                    clearInterval(scanInterval);
-                    scanInterval = null;
-                }
+                if (camera) camera.stop();
+                if (scanInterval) clearInterval(scanInterval);
             });
 
         })();
