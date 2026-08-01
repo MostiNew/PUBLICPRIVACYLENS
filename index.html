@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens · One QR</title>
+    <title>PrivacyLens · Zero-Touch</title>
 
     <style>
         /* ================================================================
@@ -360,7 +360,7 @@
         }
 
         /* ================================================================
-           APP HUD
+           APP HUD — MINIMAL
            ================================================================ */
         .hud {
             position: fixed;
@@ -375,20 +375,20 @@
             top: 16px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 6px 16px;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 14px;
             border-radius: 40px;
             backdrop-filter: blur(6px);
             border: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .hud-top .dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             display: inline-block;
             background: #555;
@@ -419,23 +419,24 @@
         }
 
         .hud-top .status {
-            font-weight: 600;
+            font-weight: 500;
+            font-size: 11px;
         }
 
         .hud-bottom {
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 4px 14px;
+            font-size: 9px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 3px 12px;
             border-radius: 40px;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
-            gap: 12px;
-            opacity: 0.6;
+            gap: 10px;
+            opacity: 0.5;
         }
 
         .hud-bottom .count {
@@ -453,7 +454,7 @@
         }
 
         /* ================================================================
-           QR OVERLAY (Scanner)
+           QR OVERLAY — SCANNER (Auto, No Interaction)
            ================================================================ */
         .qr-overlay {
             position: fixed;
@@ -464,13 +465,12 @@
             z-index: 10;
             pointer-events: none;
             display: none;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(2px);
         }
 
         .qr-overlay.active {
             display: block;
-            pointer-events: auto;
         }
 
         .qr-overlay .box {
@@ -480,9 +480,9 @@
             transform: translate(-50%, -50%);
             width: 200px;
             height: 200px;
-            border: 2px solid rgba(46, 204, 113, 0.5);
+            border: 2px solid rgba(46, 204, 113, 0.4);
             border-radius: 12px;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .qr-overlay .box .corner {
@@ -528,7 +528,7 @@
             background: linear-gradient(90deg, transparent, #2ecc71, transparent);
             animation: scan 2s ease-in-out infinite;
             transform: translateY(-50%);
-            opacity: 0.6;
+            opacity: 0.4;
         }
 
         @keyframes scan {
@@ -546,9 +546,9 @@
             bottom: 25%;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.5);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.3);
             padding: 4px 14px;
             border-radius: 40px;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -564,13 +564,13 @@
             left: 50%;
             transform: translateX(-50%) translateY(20px);
             z-index: 20;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(12px);
             color: #fff;
-            padding: 8px 16px;
+            padding: 6px 16px;
             border-radius: 40px;
-            font-size: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             opacity: 0;
             transition: all 0.4s ease;
             pointer-events: none;
@@ -602,30 +602,30 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 30;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 40px;
-            padding: 8px 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 11px;
+            padding: 6px 16px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
             pointer-events: auto;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-family: inherit;
         }
 
         .switch-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             color: #fff;
         }
 
         .switch-btn .icon-sm {
-            font-size: 14px;
+            font-size: 12px;
         }
 
         /* ================================================================
@@ -822,8 +822,8 @@
         <video id="preview" playsinline autoplay muted></video>
         <canvas id="overlay-canvas"></canvas>
 
-        <!-- QR Scanner Overlay -->
-        <div class="qr-overlay" id="qr-overlay">
+        <!-- QR Scanner Overlay — AUTO, NO TAP -->
+        <div class="qr-overlay active" id="qr-overlay">
             <div class="box">
                 <div class="corner tl"></div>
                 <div class="corner tr"></div>
@@ -831,13 +831,13 @@
                 <div class="corner br"></div>
                 <div class="line"></div>
             </div>
-            <div class="label" id="qr-label">🔍 Scan QR to Activate</div>
+            <div class="label" id="qr-label">🔍 Auto-scanning for QR...</div>
         </div>
 
         <!-- HUD -->
         <div class="hud hud-top">
-            <span class="dot" id="dot"></span>
-            <span class="status" id="status">Loading...</span>
+            <span class="dot scanning" id="dot"></span>
+            <span class="status" id="status">Scanning...</span>
         </div>
 
         <div class="hud hud-bottom">
@@ -901,7 +901,7 @@
     <div class="toast" id="toast"></div>
 
     <!-- ============================================================
-    JAVASCRIPT — DEBUGGED VERSION
+    JAVASCRIPT — ZERO-TOUCH, NO TAPPING
     ============================================================ -->
     <script>
         (function() {
@@ -919,16 +919,7 @@
             let toastTimer = null;
             let stream = null;
             let isQRViewVisible = false;
-
-            // DEBUG: Logging control
-            const DEBUG = true;
-
-            function log(msg, data) {
-                if (DEBUG) {
-                    if (data) console.log('[PrivacyLens]', msg, data);
-                    else console.log('[PrivacyLens]', msg);
-                }
-            }
+            let qrScannerStarted = false;
 
             // ================================================================
             // 2. DOM REFS
@@ -952,7 +943,7 @@
             const switchLabel = document.getElementById('switch-label');
 
             // ================================================================
-            // 3. REFINED FACE DETECTION — DEBUGGED
+            // 3. REFINED FACE DETECTION
             // ================================================================
 
             class RefinedFaceDetector {
@@ -968,7 +959,6 @@
                     const w = imageData.width;
                     const h = imageData.height;
 
-                    // Step 1: Detect skin-color pixels with tighter bounds
                     const candidates = [];
                     const step = 3;
                     let skinPixels = 0;
@@ -980,11 +970,9 @@
                             const g = data[idx + 1];
                             const b = data[idx + 2];
 
-                            // YCbCr skin detection — TIGHTENED
                             const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
                             const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
 
-                            // Very tight skin color range
                             if (cr >= 136 && cr <= 168 && cb >= 82 && cb <= 122) {
                                 candidates.push({ x, y });
                                 skinPixels++;
@@ -992,13 +980,8 @@
                         }
                     }
 
-                    // If very few skin pixels, return empty (no faces)
-                    if (skinPixels < 20) {
-                        if (this.frameCount % 30 === 0) log('No skin pixels detected');
-                        return [];
-                    }
+                    if (skinPixels < 20) return [];
 
-                    // Step 2: Cluster skin pixels
                     const clusters = [];
                     const threshold = 20;
 
@@ -1020,18 +1003,14 @@
                         }
                     }
 
-                    // Step 3: Filter clusters that could be faces
                     const rawFaces = [];
                     const minPixels = 40;
                     const maxPixels = 600;
 
                     for (const cluster of clusters) {
                         const count = cluster.points.length;
-
-                        // Skip if too few or too many pixels
                         if (count < minPixels || count > maxPixels) continue;
 
-                        // Find bounding box
                         let minX = Infinity,
                             minY = Infinity,
                             maxX = -Infinity,
@@ -1046,18 +1025,14 @@
                         const fw = maxX - minX;
                         const fh = maxY - minY;
 
-                        // Skip if too small or too large
                         if (fw < 20 || fh < 20 || fw > w * 0.5 || fh > h * 0.5) continue;
 
-                        // Check aspect ratio (face-like)
                         const aspectRatio = fw / fh;
                         if (aspectRatio < 0.55 || aspectRatio > 1.45) continue;
 
-                        // Check relative size
                         const relSize = (fw * fh) / (w * h);
                         if (relSize < 0.02 || relSize > 0.45) continue;
 
-                        // Check density (how filled the region is)
                         const density = count / (fw * fh);
                         if (density < 0.15) continue;
 
@@ -1071,7 +1046,6 @@
                         });
                     }
 
-                    // Step 4: Deduplicate overlapping faces
                     const uniqueFaces = [];
                     const dedupThreshold = 0.06;
 
@@ -1090,7 +1064,6 @@
                         }
                     }
 
-                    // Step 5: Temporal smoothing
                     let finalFaces = uniqueFaces;
 
                     if (this.faces.length > 0 && uniqueFaces.length > 0) {
@@ -1109,24 +1082,12 @@
                         }
                     }
 
-                    // If no faces detected this frame but we had faces before, keep them with decay
                     if (uniqueFaces.length === 0 && this.faces.length > 0) {
-                        // Decay confidence over time
-                        finalFaces = this.faces.map(f => ({
-                            ...f,
-                            confidence: f.confidence * 0.9
-                        }));
-                        // Remove if confidence too low
+                        finalFaces = this.faces.map(f => ({ ...f, confidence: f.confidence * 0.9 }));
                         finalFaces = finalFaces.filter(f => f.confidence > 0.3);
                     }
 
                     this.faces = finalFaces;
-
-                    // Debug logging
-                    if (this.frameCount % 30 === 0) {
-                        log(`Frame ${this.frameCount}: ${skinPixels} skin pixels, ${clusters.length} clusters, ${rawFaces.length} raw faces, ${finalFaces.length} final faces`);
-                    }
-
                     return finalFaces;
                 }
             }
@@ -1134,20 +1095,18 @@
             const detector = new RefinedFaceDetector();
 
             // ================================================================
-            // 4. DRAW OVERLAY — Blur ONLY Face Regions
+            // 4. DRAW OVERLAY
             // ================================================================
 
             function drawOverlay(faces) {
                 const w = canvas.width / (window.devicePixelRatio || 1);
                 const h = canvas.height / (window.devicePixelRatio || 1);
 
-                // Clear canvas — show the original video feed
                 ctx.clearRect(0, 0, w, h);
 
                 const faceCount = faces ? faces.length : 0;
                 count.textContent = faceCount + ' faces';
 
-                // If privacy is OFF, show a subtle lock overlay
                 if (!isActive) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
                     ctx.fillRect(0, 0, w, h);
@@ -1157,62 +1116,47 @@
                     ctx.textBaseline = 'middle';
                     ctx.fillText('🔒', w / 2, h / 2);
                     ctx.font = '14px system-ui, sans-serif';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-                    ctx.fillText('Scan QR to activate', w / 2, h / 2 + 60);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                    ctx.fillText('Waiting for QR...', w / 2, h / 2 + 60);
                     return;
                 }
 
-                // Privacy is ON — blur faces
                 if (!faces || faces.length === 0) {
-                    // No faces to blur — show green indicator
                     ctx.fillStyle = 'rgba(46, 204, 113, 0.03)';
                     ctx.fillRect(0, 0, w, h);
                     return;
                 }
 
-                // For each face, blur ONLY the face region
                 for (const face of faces) {
-                    // Calculate face bounds with padding
                     const pad = 0.12;
                     let x = Math.max(0, (face.x - pad) * w);
                     let y = Math.max(0, (face.y - pad) * h);
                     let fw = Math.min(w - x, (face.width + pad * 2) * w);
                     let fh = Math.min(h - y, (face.height + pad * 2) * h);
 
-                    // Skip if too small
                     if (fw < 8 || fh < 8) continue;
 
-                    // --- BLUR THE FACE REGION ---
-                    // Draw a mosaic blur by sampling from the video
                     const step = Math.max(6, Math.min(14, Math.round((fw + fh) / 30)));
 
-                    // Draw the face region from the video with mosaic effect
                     for (let row = 0; row < fh; row += step) {
                         for (let col = 0; col < fw; col += step) {
-                            // Sample the video at this position
                             const sx = x + col;
                             const sy = y + row;
                             const sw = Math.min(step, fw - col);
                             const sh = Math.min(step, fh - row);
-
-                            // Draw a block from the video
-                            // Use the video as source
                             ctx.drawImage(video, sx, sy, sw, sh, sx, sy, sw, sh);
                         }
                     }
 
-                    // Add subtle dark overlay for privacy feel
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
                     ctx.fillRect(x, y, fw, fh);
 
-                    // Privacy border — red dashed
                     ctx.strokeStyle = 'rgba(231, 76, 60, 0.35)';
                     ctx.lineWidth = 2;
                     ctx.setLineDash([4, 6]);
                     ctx.strokeRect(x, y, fw, fh);
                     ctx.setLineDash([]);
 
-                    // Lock icon in corner
                     ctx.fillStyle = 'rgba(255,255,255,0.25)';
                     ctx.font = '14px system-ui, sans-serif';
                     ctx.fillText('🔒', x + 8, y + 24);
@@ -1235,7 +1179,6 @@
                         return;
                     }
 
-                    // Use a lower resolution for detection (faster)
                     const detectionWidth = 320;
                     const detectionHeight = Math.round(video.videoHeight * (detectionWidth / video.videoWidth));
 
@@ -1246,10 +1189,7 @@
                     tempCtx.drawImage(video, 0, 0, detectionWidth, detectionHeight);
                     const imageData = tempCtx.getImageData(0, 0, detectionWidth, detectionHeight);
 
-                    // Detect faces
                     const faces = detector.detect(imageData);
-
-                    // Draw overlay with face blurring
                     drawOverlay(faces);
 
                     requestAnimationFrame(processFrame);
@@ -1261,38 +1201,39 @@
             }
 
             // ================================================================
-            // 6. QR SCANNER
+            // 6. QR SCANNER — AUTO-START, NO TAPPING
             // ================================================================
 
-            function startQRScanner() {
-                if (isScanning) return;
+            function startAutoQRScanner() {
+                if (qrScannerStarted) return;
+                qrScannerStarted = true;
 
+                // Check if BarcodeDetector is supported
                 if (!('BarcodeDetector' in window)) {
-                    log('BarcodeDetector not supported, using manual activation');
-                    showToast('⚠️ QR not supported, tap overlay to activate', 'error', 3000);
-                    qrOverlay.addEventListener('click', function handler() {
-                        activatePrivacy();
-                        qrOverlay.removeEventListener('click', handler);
-                    });
-                    qrOverlay.classList.add('active');
-                    qrLabel.textContent = '📲 Tap to Activate';
-                    dot.className = 'dot scanning';
-                    status.textContent = 'Tap to Activate';
+                    console.warn('BarcodeDetector not supported');
+                    qrLabel.textContent = '⚠️ QR not supported';
                     return;
                 }
 
                 isScanning = true;
                 qrOverlay.classList.add('active');
-                qrLabel.textContent = '🔍 Scan QR to Activate';
+                qrLabel.textContent = '🔍 Auto-scanning for QR...';
                 dot.className = 'dot scanning';
                 status.textContent = 'Scanning...';
-                showToast('📸 Scan the QR code', 'info', 3000);
 
                 const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
 
+                // Scan continuously — NO USER INTERACTION
                 scanInterval = setInterval(async () => {
                     if (!isScanning) {
                         clearInterval(scanInterval);
+                        return;
+                    }
+
+                    // If already active, stop scanning
+                    if (isActive) {
+                        clearInterval(scanInterval);
+                        qrOverlay.classList.remove('active');
                         return;
                     }
 
@@ -1314,22 +1255,18 @@
                         for (const detection of detections) {
                             const code = detection.rawValue.toUpperCase().trim();
                             if (code === ACTIVATION_QR) {
-                                log('QR code detected! Activating privacy...');
+                                console.log('✅ QR detected! Activating privacy...');
                                 clearInterval(scanInterval);
                                 activatePrivacy();
                                 return;
-                            } else {
-                                // Only show wrong QR message if it's not too frequent
-                                if (Math.random() < 0.1) {
-                                    qrLabel.textContent = '❌ Wrong QR';
-                                    showToast('❌ Invalid QR code', 'error', 1500);
-                                }
                             }
                         }
                     } catch (err) {
-                        // Silent fail
+                        // Silent fail — keep scanning
                     }
                 }, 500);
+
+                console.log('🔍 Auto-QR scanner started — no interaction needed');
             }
 
             // ================================================================
@@ -1352,8 +1289,6 @@
                     clearInterval(scanInterval);
                     scanInterval = null;
                 }
-
-                log('Privacy activated — faces will be blurred');
             }
 
             // ================================================================
@@ -1557,23 +1492,32 @@
                 if (e.key === 'c' || e.key === 'C') copyQR();
                 if (e.key === 'r' || e.key === 'R') {
                     isActive = false;
+                    isScanning = false;
+                    qrScannerStarted = false;
                     dot.className = 'dot scanning';
                     status.textContent = 'Scanning...';
                     privacy.textContent = '🔒 OFF';
                     privacy.className = 'privacy';
-                    showToast('🔄 Reset — scan QR to activate', 'info', 2000);
-                    if (!isScanning) startQRScanner();
+                    qrOverlay.classList.add('active');
+                    qrLabel.textContent = '🔍 Auto-scanning for QR...';
+                    showToast('🔄 Reset — scanning for QR', 'info', 2000);
+                    if (scanInterval) {
+                        clearInterval(scanInterval);
+                        scanInterval = null;
+                    }
+                    startAutoQRScanner();
                 }
             });
 
             // ================================================================
-            // 14. INIT
+            // 14. INIT — Everything Auto-Starts
             // ================================================================
 
             async function init() {
-                log('PrivacyLens starting...');
+                console.log('🕶️ PrivacyLens — Zero-Touch Mode');
+                console.log('📸 QR Code: ' + ACTIVATION_QR);
 
-                dot.className = 'dot';
+                dot.className = 'dot scanning';
                 status.textContent = 'Starting...';
                 privacy.textContent = '🔒 OFF';
                 privacy.className = 'privacy';
@@ -1588,7 +1532,7 @@
                 switchBtn.addEventListener('click', toggleQRView);
 
                 try {
-                    log('Requesting camera...');
+                    console.log('📷 Starting camera...');
                     stream = await navigator.mediaDevices.getUserMedia({
                         video: {
                             width: { ideal: 640 },
@@ -1602,24 +1546,23 @@
                     await video.play();
 
                     isReady = true;
-                    dot.className = 'dot scanning';
-                    status.textContent = 'Scan QR';
-                    showToast('📷 Camera ready — scan QR to activate', 'info', 3000);
+                    status.textContent = 'Scanning...';
+                    showToast('📷 Camera ready — auto-scanning for QR', 'info', 2000);
 
-                    log('Camera ready, starting processing...');
+                    console.log('✅ Camera ready, starting processing...');
                     processFrame();
-                    setTimeout(startQRScanner, 500);
+
+                    // AUTO-START QR SCANNER — NO TAPPING
+                    console.log('🔍 Auto-QR scanner starting...');
+                    setTimeout(startAutoQRScanner, 500);
 
                 } catch (err) {
-                    log('Camera error:', err.message);
+                    console.error('Camera error:', err);
                     showToast('❌ Camera error: ' + err.message, 'error', 4000);
                 }
 
-                console.log('🕶️ PrivacyLens — Debugged Version');
-                console.log('📸 Scan QR: ' + ACTIVATION_QR);
                 console.log('📄 Press G to toggle QR view');
                 console.log('⌨️  D=Download, P=Print, C=Copy, R=Reset');
-                console.log('🔍 Debug mode: ON');
             }
 
             init();
