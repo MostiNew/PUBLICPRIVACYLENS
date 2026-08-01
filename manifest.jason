@@ -1,8 +1,8 @@
 {
     "name": "PrivacyLens",
     "short_name": "PrivacyLens",
-    "description": "Real-time face blurring for smart glasses",
-    "start_url": "/PRIVACYLENS/",
+    "description": "Zero-touch face blurring for smart glasses",
+    "start_url": "/PUBLICPRIVACYLENS/",
     "display": "fullscreen",
     "orientation": "landscape",
     "background_color": "#000000",
