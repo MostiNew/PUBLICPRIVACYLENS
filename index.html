@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PrivacyLens AI - Public Privacy Shield</title>
-    <meta name="theme-color" content="#111827">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <title>PrivacyLens · Always On</title>
 
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js">
@@ -12,249 +12,115 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
     </script>
 
-    <!-- jsQR for QR scanning fallback -->
+    <!-- jsQR -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js">
     </script>
 
     <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --text: #f8fafc;
-            --accent: #22c55e;
-            --danger: #ef4444;
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
+            box-sizing: border-box;
         }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: #000;
+            overflow: hidden;
             height: 100vh;
-            overflow: hidden;
+            width: 100vw;
         }
 
-        header {
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            background: #020617;
-            border-bottom: 1px solid #334155;
-            z-index: 10;
-            position: relative;
-        }
-
-        .logo {
-            font-size: 22px;
-            font-weight: bold;
-        }
-        .logo span {
-            color: var(--accent);
-        }
-
-        .status {
-            padding: 8px 14px;
-            border-radius: 20px;
-            background: #334155;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        .status.on {
-            background: #16a34a;
-            color: #fff;
-        }
-        .status.off {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        #app {
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 60px);
-            overflow: hidden;
-        }
-
-        video,
-        canvas {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        #camera {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             object-fit: cover;
-        }
-
-        canvas {
-            z-index: 2;
-            pointer-events: none;
-        }
-        video {
             z-index: 1;
         }
 
-        .hud {
-            position: absolute;
-            z-index: 5;
-            top: 20px;
-            left: 20px;
-            background: rgba(15, 23, 42, 0.85);
-            padding: 15px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            min-width: 200px;
+        #output {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
             pointer-events: none;
         }
-        .hud div {
-            margin: 6px 0;
-            font-size: 14px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 10px;
-            background: #475569;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        .badge.on {
-            background: #16a34a;
-            color: #fff;
-        }
-        .badge.off {
-            background: #dc2626;
-            color: #fff;
-        }
-        .badge.scanning {
-            background: #f59e0b;
-            color: #000;
-        }
 
-        .toast {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #020617;
-            padding: 14px 22px;
-            border-radius: 30px;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 10;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            font-weight: 600;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        .toast.show {
-            opacity: 1;
-        }
-        .toast.success {
-            border-color: #22c55e;
-            color: #22c55e;
-        }
-        .toast.error {
-            border-color: #ef4444;
-            color: #ef4444;
-        }
-
-        .permission {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 20px;
-            background: #020617;
-            z-index: 20;
-        }
-        .permission h2 {
-            font-size: 28px;
-        }
-        .permission p {
-            color: #94a3b8;
-            font-size: 16px;
-        }
-
-        button {
-            background: #22c55e;
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 30px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-        button:hover {
-            opacity: 0.85;
-            transform: scale(1.02);
-        }
-
+        /* QR Overlay — Disappears on detection */
         .qr-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 3;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .qr-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .qr-overlay .box {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 2px solid rgba(34, 197, 94, 0.3);
-            border-radius: 16px;
-            z-index: 3;
-            pointer-events: none;
-            display: none;
+            width: 160px;
+            height: 160px;
+            border: 1.5px solid rgba(46, 204, 113, 0.2);
+            border-radius: 12px;
         }
-        .qr-overlay.active {
-            display: block;
-        }
-        .qr-overlay .corner {
+
+        .qr-overlay .box .corner {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: #22c55e;
+            width: 16px;
+            height: 16px;
+            border-color: rgba(46, 204, 113, 0.25);
             border-style: solid;
             border-width: 0;
         }
-        .qr-overlay .corner.tl {
+        .qr-overlay .box .corner.tl {
             top: -2px;
             left: -2px;
-            border-top-width: 3px;
-            border-left-width: 3px;
+            border-top-width: 2px;
+            border-left-width: 2px;
         }
-        .qr-overlay .corner.tr {
+        .qr-overlay .box .corner.tr {
             top: -2px;
             right: -2px;
-            border-top-width: 3px;
-            border-right-width: 3px;
+            border-top-width: 2px;
+            border-right-width: 2px;
         }
-        .qr-overlay .corner.bl {
+        .qr-overlay .box .corner.bl {
             bottom: -2px;
             left: -2px;
-            border-bottom-width: 3px;
-            border-left-width: 3px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
         }
-        .qr-overlay .corner.br {
+        .qr-overlay .box .corner.br {
             bottom: -2px;
             right: -2px;
-            border-bottom-width: 3px;
-            border-right-width: 3px;
+            border-bottom-width: 2px;
+            border-right-width: 2px;
         }
-        .qr-overlay .line {
+
+        .qr-overlay .box .line {
             position: absolute;
-            top: 10%;
+            top: 50%;
             left: 10%;
             width: 80%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #22c55e, transparent);
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.2), transparent);
             animation: scanLine 2s ease-in-out infinite;
+            transform: translateY(-50%);
         }
+
         @keyframes scanLine {
             0%,
             100% {
@@ -265,470 +131,433 @@
             }
         }
 
+        .qr-overlay .label {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 10px;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 10px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        /* HUD — Almost invisible */
+        .hud {
+            position: fixed;
+            z-index: 5;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.08);
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .hud-top {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1px 10px;
+            border-radius: 40px;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.01);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-top .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #555;
+        }
+
+        .hud-top .dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 6px rgba(46, 204, 113, 0.15);
+        }
+
+        .hud-bottom {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 7px;
+            background: rgba(0, 0, 0, 0.08);
+            padding: 1px 8px;
+            border-radius: 40px;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.01);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.3;
+        }
+
+        .hud-bottom .count {
+            color: rgba(139, 235, 200, 0.3);
+        }
+
         @media (max-width: 600px) {
-            .hud {
-                font-size: 12px;
-                padding: 10px;
-                min-width: 150px;
+            .qr-overlay .box {
+                width: 130px;
+                height: 130px;
             }
-            .hud div {
-                font-size: 12px;
+            .qr-overlay .label {
+                font-size: 8px;
+                bottom: 22%;
             }
-            .badge {
-                font-size: 11px;
-                padding: 2px 8px;
-            }
-            .logo {
-                font-size: 16px;
-            }
-            .status {
-                font-size: 11px;
-                padding: 4px 10px;
-            }
-            .toast {
-                font-size: 13px;
-                padding: 10px 16px;
-                bottom: 20px;
-            }
-            .permission h2 {
-                font-size: 22px;
-            }
-            .permission p {
-                font-size: 14px;
-                padding: 0 20px;
-                text-align: center;
-            }
-            button {
-                padding: 12px 24px;
-                font-size: 14px;
-            }
-            .qr-overlay {
-                width: 150px;
-                height: 150px;
+        }
+
+        @media (orientation: landscape) {
+            .qr-overlay .box {
+                width: 180px;
+                height: 180px;
             }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">🔒 Privacy<span>Lens</span> AI</div>
-        <div class="status off" id="privacyStatus">🔒 PRIVACY OFF</div>
-    </header>
+    <video id="camera" playsinline autoplay muted></video>
+    <canvas id="output"></canvas>
 
-    <div id="app">
-        <video id="camera" playsinline autoplay muted></video>
-        <canvas id="output"></canvas>
-
-        <!-- QR Overlay -->
-        <div class="qr-overlay active" id="qrOverlay">
+    <div class="qr-overlay" id="qrOverlay">
+        <div class="box">
             <div class="corner tl"></div>
             <div class="corner tr"></div>
             <div class="corner bl"></div>
             <div class="corner br"></div>
             <div class="line"></div>
         </div>
+        <div class="label">🔍</div>
+    </div>
 
-        <!-- HUD -->
-        <div class="hud">
-            <div>📷 Camera: <span class="badge off" id="cameraStatus">OFF</span></div>
-            <div>📸 QR: <span class="badge scanning" id="qrStatus">SCANNING</span></div>
-            <div>👤 Faces: <span class="badge" id="faceCount">0</span></div>
-            <div>⚡ FPS: <span class="badge" id="fps">0</span></div>
-        </div>
+    <div class="hud hud-top">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">•</span>
+    </div>
 
-        <!-- Toast -->
-        <div class="toast" id="toast">✅ Privacy Activated</div>
-
-        <!-- Permission Overlay -->
-        <div class="permission" id="permission">
-            <h2>🕶️ PrivacyLens AI</h2>
-            <p>Allow camera access to automatically protect identities</p>
-            <button onclick="startCamera()">📷 Start Camera</button>
-        </div>
+    <div class="hud hud-bottom">
+        <span class="count" id="faceCount"></span>
     </div>
 
     <script>
-        // ================================================================
-        // 1. DOM REFS
-        // ================================================================
+        (function() {
+            'use strict';
 
-        const video = document.getElementById('camera');
-        const canvas = document.getElementById('output');
-        const ctx = canvas.getContext('2d');
+            // ================================================================
+            // CONFIG — One QR, One Purpose
+            // ================================================================
 
-        const permission = document.getElementById('permission');
-        const qrOverlay = document.getElementById('qrOverlay');
+            const TARGET_QR = 'PRIVACYLENS-ON';
+            let privacyActive = false;
+            let isReady = false;
+            let stream = null;
+            let detectedFaces = [];
+            let faceDetector = null;
+            let frameSkip = 0;
 
-        const cameraStatus = document.getElementById('cameraStatus');
-        const qrStatus = document.getElementById('qrStatus');
-        const faceCount = document.getElementById('faceCount');
-        const fpsDisplay = document.getElementById('fps');
-        const privacyStatus = document.getElementById('privacyStatus');
-        const toast = document.getElementById('toast');
+            // ================================================================
+            // DOM
+            // ================================================================
 
-        // ================================================================
-        // 2. STATE
-        // ================================================================
+            const video = document.getElementById('camera');
+            const canvas = document.getElementById('output');
+            const ctx = canvas.getContext('2d');
 
-        let privacyActive = false;
-        let stream = null;
-        let detectedFaces = [];
-        let faceDetector = null;
-        let isReady = false;
-        let frameCount = 0;
-        let lastFpsUpdate = performance.now();
-        let currentFps = 0;
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const faceCount = document.getElementById('faceCount');
+            const qrOverlay = document.getElementById('qrOverlay');
 
-        const TARGET_QR = 'PRIVACYLENS-ON';
+            // ================================================================
+            // CAMERA — Always On
+            // ================================================================
 
-        // ================================================================
-        // 3. TOAST
-        // ================================================================
+            async function startCamera() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        },
+                        audio: false
+                    });
 
-        function showToast(message, type = 'success') {
-            toast.textContent = message;
-            toast.className = 'toast show ' + type;
-            clearTimeout(toast._timer);
-            toast._timer = setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
+                    video.srcObject = stream;
 
-        // ================================================================
-        // 4. CAMERA
-        // ================================================================
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        isReady = true;
+                        initFaceDetection();
+                        processFrame();
+                        startAutoQRScanner();
+                    };
 
-        async function startCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
-
-                video.srcObject = stream;
-                permission.style.display = 'none';
-                cameraStatus.textContent = 'ACTIVE';
-                cameraStatus.className = 'badge on';
-
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    isReady = true;
-                    initFaceDetection();
-                    processFrame();
-                    showToast('📷 Camera ready — scanning for QR', 'success');
-                };
-
-                video.onerror = () => {
-                    showToast('❌ Video error', 'error');
-                };
-
-            } catch (error) {
-                cameraStatus.textContent = 'DENIED';
-                cameraStatus.className = 'badge off';
-                showToast('❌ Camera permission required', 'error');
-                console.error('Camera error:', error);
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    setTimeout(startCamera, 3000);
+                }
             }
-        }
 
-        // ================================================================
-        // 5. MEDIAPIPE FACE DETECTION
-        // ================================================================
+            // ================================================================
+            // FACE DETECTION — Zero Latency Pipeline
+            // ================================================================
 
-        function initFaceDetection() {
-            try {
-                faceDetector = new FaceDetection({
-                    locateFile: (file) => {
-                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
-                    }
-                });
-
-                faceDetector.setOptions({
-                    model: 'short',
-                    minDetectionConfidence: 0.6
-                });
-
-                faceDetector.onResults((results) => {
-                    detectedFaces = [];
-
-                    if (results.detections) {
-                        results.detections.forEach((face) => {
-                            const box = face.boundingBox;
-                            const x = (box.xCenter - box.width / 2) * canvas.width;
-                            const y = (box.yCenter - box.height / 2) * canvas.height;
-                            const w = box.width * canvas.width;
-                            const h = box.height * canvas.height;
-
-                            detectedFaces.push({ x, y, w, h });
-                        });
-                    }
-
-                    faceCount.textContent = detectedFaces.length;
-                });
-
-                console.log('✅ Face detection initialized');
-
-            } catch (error) {
-                console.error('Face detection init error:', error);
-                showToast('⚠️ Face detection error', 'error');
-            }
-        }
-
-        // ================================================================
-        // 6. QR SCANNER — BarcodeDetector + jsQR Fallback
-        // ================================================================
-
-        async function scanQR() {
-            try {
-                // Try BarcodeDetector API first
-                if ('BarcodeDetector' in window) {
-                    const detector = new BarcodeDetector({ formats: ['qr_code'] });
-                    const detections = await detector.detect(video);
-
-                    for (const detection of detections) {
-                        const code = detection.rawValue.toUpperCase().trim();
-                        if (code === TARGET_QR) {
-                            activatePrivacy();
-                            qrStatus.textContent = '✅ MATCH';
-                            qrStatus.className = 'badge on';
-                            qrOverlay.classList.remove('active');
-                            showToast('✅ QR matched — Privacy ON!', 'success');
-                            return true;
+            function initFaceDetection() {
+                try {
+                    faceDetector = new FaceDetection({
+                        locateFile: (file) => {
+                            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
                         }
-                    }
-                }
+                    });
 
-                // Fallback: jsQR (if available)
-                if (typeof jsQR !== 'undefined' && video.readyState >= 2) {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = Math.min(video.videoWidth || 640, 480);
-                    tempCanvas.height = Math.min(video.videoHeight || 480, 360);
-                    const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    faceDetector.setOptions({
+                        model: 'short',
+                        minDetectionConfidence: 0.6
+                    });
 
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code && code.data) {
-                        const decoded = code.data.toUpperCase().trim();
-                        if (decoded === TARGET_QR) {
-                            activatePrivacy();
-                            qrStatus.textContent = '✅ MATCH';
-                            qrStatus.className = 'badge on';
-                            qrOverlay.classList.remove('active');
-                            showToast('✅ QR matched — Privacy ON!', 'success');
-                            return true;
+                    faceDetector.onResults((results) => {
+                        detectedFaces = [];
+                        if (results.detections) {
+                            results.detections.forEach((face) => {
+                                const box = face.boundingBox;
+                                const x = (box.xCenter - box.width / 2) * canvas.width;
+                                const y = (box.yCenter - box.height / 2) * canvas.height;
+                                const w = box.width * canvas.width;
+                                const h = box.height * canvas.height;
+                                detectedFaces.push({ x, y, w, h });
+                            });
                         }
-                    }
-                }
+                        const count = detectedFaces.length;
+                        faceCount.textContent = count > 0 ? count + ' faces' : '';
+                    });
 
-                // Update QR status periodically
-                if (frameCount % 30 === 0 && !privacyActive) {
-                    qrStatus.textContent = '🔍 SCANNING';
-                    qrStatus.className = 'badge scanning';
+                } catch (error) {
+                    console.error('Face detection error:', error);
                 }
-
-                return false;
-
-            } catch (err) {
-                // Silent fail — QR scanning is optional
-                if (frameCount % 60 === 0) {
-                    qrStatus.textContent = '⚠️ UNAVAILABLE';
-                    qrStatus.className = 'badge off';
-                }
-                return false;
             }
-        }
 
-        // ================================================================
-        // 7. PRIVACY BLUR — Pixelation Mask
-        // ================================================================
+            // ================================================================
+            // QR SCANNER — Continuous, Silent
+            // ================================================================
 
-        function applyPrivacyMask() {
-            if (detectedFaces.length === 0) return;
+            let qrScanInterval = null;
 
-            // Sort faces by size (largest first)
-            const sortedFaces = [...detectedFaces].sort((a, b) => (b.w * b.h) - (a.w * a.h));
+            function startAutoQRScanner() {
+                const useBarcodeDetector = 'BarcodeDetector' in window;
 
-            for (const face of sortedFaces) {
-                // Clamp values
-                const x = Math.max(0, face.x);
-                const y = Math.max(0, face.y);
-                const w = Math.min(canvas.width - x, face.w);
-                const h = Math.min(canvas.height - y, face.h);
+                if (useBarcodeDetector) {
+                    const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
 
-                if (w < 10 || h < 10) continue;
+                    qrScanInterval = setInterval(async () => {
+                        if (privacyActive) {
+                            qrOverlay.classList.add('hidden');
+                            return;
+                        }
 
-                // Get image data for the face region
-                const imageData = ctx.getImageData(x, y, w, h);
-                const data = imageData.data;
-                const pixelSize = Math.max(6, Math.min(16, Math.round((w + h) / 40)));
+                        try {
+                            if (!video || video.readyState < 2) return;
 
-                // Pixelate
-                for (let row = 0; row < h; row += pixelSize) {
-                    for (let col = 0; col < w; col += pixelSize) {
-                        // Get average color of the block
-                        let r = 0,
-                            g = 0,
-                            b = 0,
-                            count = 0;
-                        for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                            for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                const idx = ((row + dy) * w + (col + dx)) * 4;
-                                r += data[idx];
-                                g += data[idx + 1];
-                                b += data[idx + 2];
-                                count++;
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = Math.min(video.videoWidth || 640, 480);
+                            tempCanvas.height = Math.min(video.videoHeight || 480, 360);
+                            const tempCtx = tempCanvas.getContext('2d');
+                            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                            const detections = await barcodeDetector.detect(tempCanvas);
+
+                            for (const detection of detections) {
+                                const code = detection.rawValue.toUpperCase().trim();
+                                if (code === TARGET_QR) {
+                                    activatePrivacy();
+                                    return;
+                                }
                             }
+                        } catch (err) {
+                            // Silent fail
                         }
-                        if (count > 0) {
-                            r = Math.round(r / count);
-                            g = Math.round(g / count);
-                            b = Math.round(b / count);
-                        }
-
-                        // Fill the block with average color
-                        for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                            for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                const idx = ((row + dy) * w + (col + dx)) * 4;
-                                data[idx] = r;
-                                data[idx + 1] = g;
-                                data[idx + 2] = b;
-                            }
-                        }
-                    }
-                }
-
-                // Put the pixelated data back
-                ctx.putImageData(imageData, x, y);
-
-                // Draw a subtle red border
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 6]);
-                ctx.strokeRect(x, y, w, h);
-                ctx.setLineDash([]);
-
-                // Lock icon
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.font = '18px system-ui, sans-serif';
-                ctx.fillText('🔒', x + 8, y + 30);
-            }
-        }
-
-        // ================================================================
-        // 8. PROCESS LOOP
-        // ================================================================
-
-        async function processFrame() {
-            if (!isReady || !video || video.readyState < 2) {
-                requestAnimationFrame(processFrame);
-                return;
-            }
-
-            try {
-                // Draw video to canvas
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Run face detection
-                if (faceDetector) {
-                    await faceDetector.send({ image: video });
-                }
-
-                // Scan QR
-                if (!privacyActive) {
-                    await scanQR();
-                }
-
-                // Apply privacy mask if active
-                if (privacyActive && detectedFaces.length > 0) {
-                    applyPrivacyMask();
-                }
-
-                // Update FPS
-                frameCount++;
-                const now = performance.now();
-                if (now - lastFpsUpdate > 1000) {
-                    currentFps = frameCount;
-                    frameCount = 0;
-                    lastFpsUpdate = now;
-                    fpsDisplay.textContent = currentFps;
-                }
-
-                requestAnimationFrame(processFrame);
-
-            } catch (error) {
-                console.error('Process frame error:', error);
-                requestAnimationFrame(processFrame);
-            }
-        }
-
-        // ================================================================
-        // 9. PRIVACY CONTROL
-        // ================================================================
-
-        function activatePrivacy() {
-            if (privacyActive) return;
-            privacyActive = true;
-            privacyStatus.textContent = '🔒 PRIVACY ON';
-            privacyStatus.className = 'status on';
-            qrOverlay.classList.remove('active');
-            showToast('✅ Privacy activated! Faces are protected.', 'success');
-        }
-
-        function deactivatePrivacy() {
-            privacyActive = false;
-            privacyStatus.textContent = '🔒 PRIVACY OFF';
-            privacyStatus.className = 'status off';
-            qrOverlay.classList.add('active');
-            showToast('🔓 Privacy deactivated', 'info');
-        }
-
-        // ================================================================
-        // 10. KEYBOARD SHORTCUTS (for testing)
-        // ================================================================
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'p' || e.key === 'P') {
-                if (privacyActive) {
-                    deactivatePrivacy();
+                    }, 300);
                 } else {
-                    activatePrivacy();
+                    // jsQR fallback
+                    qrScanInterval = setInterval(() => {
+                        if (privacyActive) {
+                            qrOverlay.classList.add('hidden');
+                            return;
+                        }
+
+                        try {
+                            if (!video || video.readyState < 2) return;
+
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = Math.min(video.videoWidth || 640, 480);
+                            tempCanvas.height = Math.min(video.videoHeight || 480, 360);
+                            const tempCtx = tempCanvas.getContext('2d');
+                            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                            if (code && code.data) {
+                                const decoded = code.data.toUpperCase().trim();
+                                if (decoded === TARGET_QR) {
+                                    activatePrivacy();
+                                    return;
+                                }
+                            }
+                        } catch (err) {
+                            // Silent fail
+                        }
+                    }, 400);
                 }
             }
-        });
 
-        // ================================================================
-        // 11. INIT
-        // ================================================================
+            // ================================================================
+            // ACTIVATE — Once, Instantly, Forever
+            // ================================================================
 
-        console.log('🕶️ PrivacyLens AI Debugged');
-        console.log('📸 Target QR: ' + TARGET_QR);
-        console.log('⌨️  Press P to toggle privacy (manual override)');
+            function activatePrivacy() {
+                if (privacyActive) return;
+                privacyActive = true;
 
-        // Auto-start if camera was already granted
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            // Check if camera permission was already granted
-            navigator.permissions.query({ name: 'camera' }).then((result) => {
-                if (result.state === 'granted') {
-                    startCamera();
+                statusDot.className = 'dot active';
+                statusText.textContent = '•';
+                qrOverlay.classList.add('hidden');
+
+                if (qrScanInterval) {
+                    clearInterval(qrScanInterval);
+                    qrScanInterval = null;
                 }
-            }).catch(() => {
-                // Permission API not supported, user must click button
+            }
+
+            // ================================================================
+            // PRIVACY BLUR — Zero Latency Pixelation
+            // ================================================================
+
+            function applyPrivacyMask() {
+                if (detectedFaces.length === 0) return;
+
+                // Process all faces
+                for (const face of detectedFaces) {
+                    const x = Math.max(0, face.x);
+                    const y = Math.max(0, face.y);
+                    const w = Math.min(canvas.width - x, face.w);
+                    const h = Math.min(canvas.height - y, face.h);
+
+                    if (w < 8 || h < 8) continue;
+
+                    // Get image data for this face
+                    const imageData = ctx.getImageData(x, y, w, h);
+                    const data = imageData.data;
+                    const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
+
+                    // Pixelate
+                    for (let row = 0; row < h; row += pixelSize) {
+                        for (let col = 0; col < w; col += pixelSize) {
+                            let r = 0,
+                                g = 0,
+                                b = 0,
+                                count = 0;
+                            for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                    const idx = ((row + dy) * w + (col + dx)) * 4;
+                                    r += data[idx];
+                                    g += data[idx + 1];
+                                    b += data[idx + 2];
+                                    count++;
+                                }
+                            }
+                            if (count > 0) {
+                                r = Math.round(r / count);
+                                g = Math.round(g / count);
+                                b = Math.round(b / count);
+                            }
+
+                            for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                    const idx = ((row + dy) * w + (col + dx)) * 4;
+                                    data[idx] = r;
+                                    data[idx + 1] = g;
+                                    data[idx + 2] = b;
+                                }
+                            }
+                        }
+                    }
+
+                    ctx.putImageData(imageData, x, y);
+
+                    // Subtle privacy border
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.15)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 5]);
+                    ctx.strokeRect(x, y, w, h);
+                    ctx.setLineDash([]);
+                }
+            }
+
+            // ================================================================
+            // PROCESS LOOP — Zero Latency
+            // ================================================================
+
+            function processFrame() {
+                if (!isReady || !video || video.readyState < 2) {
+                    requestAnimationFrame(processFrame);
+                    return;
+                }
+
+                try {
+                    // Draw the video frame
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Run face detection
+                    if (faceDetector) {
+                        faceDetector.send({ image: video });
+                    }
+
+                    // If privacy is active, blur faces
+                    if (privacyActive && detectedFaces.length > 0) {
+                        applyPrivacyMask();
+                    }
+
+                    requestAnimationFrame(processFrame);
+
+                } catch (error) {
+                    console.error('Process error:', error);
+                    requestAnimationFrame(processFrame);
+                }
+            }
+
+            // ================================================================
+            // INIT
+            // ================================================================
+
+            console.log('🕶️ PrivacyLens — Always On');
+            console.log('📸 QR: ' + TARGET_QR);
+            console.log('⚡ Zero latency face blurring');
+
+            // Start everything
+            startCamera();
+
+            window.addEventListener('beforeunload', () => {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
+                if (qrScanInterval) {
+                    clearInterval(qrScanInterval);
+                    qrScanInterval = null;
+                }
             });
-        }
 
-        // Window resize handler
-        window.addEventListener('resize', () => {
-            if (video.videoWidth > 0) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-            }
-        });
+        })();
     </script>
 </body>
 </html>
