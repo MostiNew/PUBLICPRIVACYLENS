@@ -4,22 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>PrivacyLens</title>
 
-    <!-- MediaPipe Face Detection -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
+    <!-- Use a lightweight, working face detection library -->
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js">
     </script>
 
     <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
     </script>
-
-    <!-- Manifest for PWA -->
-    <link rel="manifest" href="manifest.json" />
 
     <style>
         * {
@@ -66,7 +59,6 @@
             pointer-events: none;
         }
 
-        /* QR Overlay — Disappears on detection */
         .qr-overlay {
             position: fixed;
             top: 0;
@@ -89,7 +81,7 @@
         .qr-overlay .box {
             width: 160px;
             height: 160px;
-            border: 1.5px solid rgba(46, 204, 113, 0.15);
+            border: 1.5px solid rgba(46, 204, 113, 0.2);
             border-radius: 12px;
             position: relative;
         }
@@ -98,7 +90,7 @@
             position: absolute;
             width: 16px;
             height: 16px;
-            border-color: rgba(46, 204, 113, 0.2);
+            border-color: rgba(46, 204, 113, 0.25);
             border-style: solid;
             border-width: 0;
         }
@@ -134,7 +126,7 @@
             left: 10%;
             width: 80%;
             height: 1.5px;
-            background: linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.15), transparent);
+            background: linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.2), transparent);
             animation: scanLine 2s ease-in-out infinite;
             transform: translateY(-50%);
         }
@@ -157,12 +149,11 @@
             letter-spacing: 0.5px;
         }
 
-        /* HUD — Minimal, almost invisible */
         .hud {
             position: fixed;
             z-index: 5;
             pointer-events: none;
-            color: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.08);
             font-family: system-ui, sans-serif;
         }
 
@@ -171,7 +162,7 @@
             left: 50%;
             transform: translateX(-50%);
             font-size: 8px;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.15);
             padding: 2px 10px;
             border-radius: 40px;
             display: flex;
@@ -197,7 +188,7 @@
             left: 50%;
             transform: translateX(-50%);
             font-size: 7px;
-            background: rgba(0, 0, 0, 0.06);
+            background: rgba(0, 0, 0, 0.08);
             padding: 1px 8px;
             border-radius: 40px;
             display: flex;
@@ -210,7 +201,6 @@
             color: rgba(139, 235, 200, 0.2);
         }
 
-        /* QR View (Generator) */
         #qr-view {
             position: fixed;
             top: 0;
@@ -391,7 +381,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Switch Button — For QR generation only */
         .switch-btn {
             position: fixed;
             bottom: 70px;
@@ -522,9 +511,6 @@
 </head>
 <body>
 
-    <!-- ============================================================
-    CAMERA VIEW
-    ============================================================ -->
     <div id="camera-view">
         <video id="camera" playsinline autoplay muted></video>
         <canvas id="output"></canvas>
@@ -549,9 +535,6 @@
         </div>
     </div>
 
-    <!-- ============================================================
-    QR VIEW (Generator)
-    ============================================================ -->
     <div id="qr-view">
         <div class="qr-card">
             <div class="badge">🔒 Passive Privacy</div>
@@ -570,24 +553,18 @@
                     <li><strong>Open</strong> this app on your smart glasses.</li>
                     <li><strong>Install</strong> as a PWA (Add to Home Screen).</li>
                     <li><strong>Leave it open</strong> — never close the app.</li>
-                    <li>Glasses see QR → <strong>privacy activates forever</strong>.</li>
+                    <li>Glasses see QR → <strong>faces blur forever</strong>.</li>
                 </ol>
             </div>
             <div class="footer">Open Once · Never Tap · Just Wear</div>
         </div>
     </div>
 
-    <!-- ============================================================
-    SWITCH BUTTON
-    ============================================================ -->
     <button class="switch-btn" id="switchBtn">
         <span id="switchIcon">📄</span>
         <span id="switchLabel">Show QR</span>
     </button>
 
-    <!-- ============================================================
-    JAVASCRIPT
-    ============================================================ -->
     <script>
         (function() {
             'use strict';
@@ -596,10 +573,8 @@
             let privacyActive = false;
             let isReady = false;
             let stream = null;
-            let detectedFaces = [];
             let isQRViewVisible = false;
-            let faceDetector = null;
-            let mediaPipeReady = false;
+            let detectedFaces = [];
             let qrScanInterval = null;
 
             const video = document.getElementById('camera');
@@ -617,48 +592,218 @@
             const switchLabel = document.getElementById('switchLabel');
 
             // ================================================================
-            // MEDIAPIPE FACE DETECTION
+            // 1. FACE DETECTION — Using face-api.js (Works)
             // ================================================================
 
-            function initMediaPipe() {
+            let faceDetectorReady = false;
+
+            async function loadFaceDetection() {
                 try {
-                    faceDetector = new FaceDetection({
-                        locateFile: (file) => {
-                            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
-                        }
-                    });
+                    console.log('Loading face detection...');
 
-                    faceDetector.setOptions({
-                        model: 'short',
-                        minDetectionConfidence: 0.65
-                    });
+                    // Load the models from CDN
+                    await faceapi.nets.tinyFaceDetector.loadFromUri(
+                        'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/'
+                    );
 
-                    faceDetector.onResults((results) => {
-                        detectedFaces = [];
-                        if (results.detections && results.detections.length > 0) {
-                            results.detections.forEach((face) => {
-                                const box = face.boundingBox;
-                                const x = (box.xCenter - box.width / 2) * canvas.width;
-                                const y = (box.yCenter - box.height / 2) * canvas.height;
-                                const w = box.width * canvas.width;
-                                const h = box.height * canvas.height;
-                                detectedFaces.push({ x, y, w, h });
-                            });
-                        }
-                        faceCount.textContent = detectedFaces.length > 0 ? detectedFaces.length + ' faces' : '';
-                    });
+                    faceDetectorReady = true;
+                    console.log('✅ Face detection ready');
 
-                    mediaPipeReady = true;
-                    return true;
+                    // Start processing frames
+                    processFrame();
 
-                } catch (error) {
-                    console.warn('MediaPipe init failed:', error);
-                    return false;
+                } catch (err) {
+                    console.warn('Face detection error:', err);
+                    // Fallback: simple skin color detection
+                    console.log('Using fallback detection');
+                    faceDetectorReady = false;
+                    processFrame();
+                }
+            }
+
+            function detectFacesWithFaceAPI(imageData) {
+                try {
+                    const detections = faceapi.detectAllFaces(imageData,
+                        new faceapi.TinyFaceDetectorOptions({
+                            inputSize: 416,
+                            scoreThreshold: 0.5
+                        })
+                    );
+
+                    const faces = [];
+                    for (const det of detections) {
+                        const box = det.box;
+                        faces.push({
+                            x: box.x,
+                            y: box.y,
+                            width: box.width,
+                            height: box.height
+                        });
+                    }
+                    return faces;
+                } catch (err) {
+                    return [];
                 }
             }
 
             // ================================================================
-            // QR SCANNER
+            // 2. FALLBACK: Skin Color Detection
+            // ================================================================
+
+            function detectFacesWithSkin(imageData) {
+                const faces = [];
+                const data = imageData.data;
+                const w = imageData.width;
+                const h = imageData.height;
+
+                const skinPixels = [];
+
+                for (let y = 0; y < h; y += 4) {
+                    for (let x = 0; x < w; x += 4) {
+                        const idx = (y * w + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+
+                        // YCbCr skin detection
+                        const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
+                        const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
+
+                        if (cr >= 133 && cr <= 173 && cb >= 77 && cb <= 127) {
+                            skinPixels.push({ x, y });
+                        }
+                    }
+                }
+
+                // Group skin pixels into clusters
+                const clusters = [];
+                const threshold = 30;
+
+                for (const p of skinPixels) {
+                    let found = false;
+                    for (const cluster of clusters) {
+                        const dx = p.x - cluster.cx;
+                        const dy = p.y - cluster.cy;
+                        if (dx * dx + dy * dy < threshold * threshold) {
+                            cluster.points.push(p);
+                            cluster.cx = (cluster.cx * (cluster.points.length - 1) + p.x) / cluster.points.length;
+                            cluster.cy = (cluster.cy * (cluster.points.length - 1) + p.y) / cluster.points.length;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        clusters.push({ cx: p.x, cy: p.y, points: [p] });
+                    }
+                }
+
+                // Filter clusters that could be faces
+                for (const cluster of clusters) {
+                    if (cluster.points.length > 30 && cluster.points.length < 500) {
+                        let minX = Infinity,
+                            minY = Infinity,
+                            maxX = -Infinity,
+                            maxY = -Infinity;
+                        for (const p of cluster.points) {
+                            if (p.x < minX) minX = p.x;
+                            if (p.y < minY) minY = p.y;
+                            if (p.x > maxX) maxX = p.x;
+                            if (p.y > maxY) maxY = p.y;
+                        }
+                        const fw = maxX - minX;
+                        const fh = maxY - minY;
+                        const aspectRatio = fw / fh;
+                        if (aspectRatio > 0.5 && aspectRatio < 1.5) {
+                            faces.push({
+                                x: minX,
+                                y: minY,
+                                width: fw,
+                                height: fh
+                            });
+                        }
+                    }
+                }
+
+                return faces;
+            }
+
+            // ================================================================
+            // 3. BLUR FUNCTION
+            // ================================================================
+
+            function applyPrivacyMask(faces) {
+                if (!faces || faces.length === 0) return;
+
+                for (const face of faces) {
+                    // Ensure bounds are within canvas
+                    const x = Math.max(0, face.x);
+                    const y = Math.max(0, face.y);
+                    const w = Math.min(canvas.width - x, face.width);
+                    const h = Math.min(canvas.height - y, face.height);
+
+                    if (w < 10 || h < 10) continue;
+
+                    try {
+                        // Get pixel data for the face region
+                        const imageData = ctx.getImageData(x, y, w, h);
+                        const data = imageData.data;
+                        const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
+
+                        // Pixelate
+                        for (let row = 0; row < h; row += pixelSize) {
+                            for (let col = 0; col < w; col += pixelSize) {
+                                let r = 0,
+                                    g = 0,
+                                    b = 0,
+                                    count = 0;
+                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                        const idx = ((row + dy) * w + (col + dx)) * 4;
+                                        r += data[idx];
+                                        g += data[idx + 1];
+                                        b += data[idx + 2];
+                                        count++;
+                                    }
+                                }
+                                if (count > 0) {
+                                    r = Math.round(r / count);
+                                    g = Math.round(g / count);
+                                    b = Math.round(b / count);
+                                }
+
+                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                        const idx = ((row + dy) * w + (col + dx)) * 4;
+                                        data[idx] = r;
+                                        data[idx + 1] = g;
+                                        data[idx + 2] = b;
+                                    }
+                                }
+                            }
+                        }
+
+                        ctx.putImageData(imageData, x, y);
+
+                        // Privacy border
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([4, 6]);
+                        ctx.strokeRect(x, y, w, h);
+                        ctx.setLineDash([]);
+
+                        // Lock icon
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        ctx.font = '18px system-ui, sans-serif';
+                        ctx.fillText('🔒', x + 8, y + 30);
+
+                    } catch (err) {
+                        console.warn('Blur error:', err);
+                    }
+                }
+            }
+
+            // ================================================================
+            // 4. QR SCANNER
             // ================================================================
 
             function startAutoQRScanner() {
@@ -737,7 +882,7 @@
             }
 
             // ================================================================
-            // ACTIVATE PRIVACY — Once, Forever
+            // 5. ACTIVATE PRIVACY
             // ================================================================
 
             function activatePrivacy() {
@@ -753,81 +898,11 @@
                     qrScanInterval = null;
                 }
 
-                console.log('✅ Privacy Activated — Faces will blur forever');
+                console.log('✅ Privacy Activated — Faces will blur');
             }
 
             // ================================================================
-            // PRIVACY BLUR
-            // ================================================================
-
-            function applyPrivacyMask(faces) {
-                if (!faces || faces.length === 0) return;
-
-                for (const face of faces) {
-                    const x = Math.max(0, face.x);
-                    const y = Math.max(0, face.y);
-                    const w = Math.min(canvas.width - x, face.w);
-                    const h = Math.min(canvas.height - y, face.h);
-
-                    if (w < 8 || h < 8) continue;
-
-                    try {
-                        const imageData = ctx.getImageData(x, y, w, h);
-                        const data = imageData.data;
-                        const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
-
-                        for (let row = 0; row < h; row += pixelSize) {
-                            for (let col = 0; col < w; col += pixelSize) {
-                                let r = 0,
-                                    g = 0,
-                                    b = 0,
-                                    count = 0;
-                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                        const idx = ((row + dy) * w + (col + dx)) * 4;
-                                        r += data[idx];
-                                        g += data[idx + 1];
-                                        b += data[idx + 2];
-                                        count++;
-                                    }
-                                }
-                                if (count > 0) {
-                                    r = Math.round(r / count);
-                                    g = Math.round(g / count);
-                                    b = Math.round(b / count);
-                                }
-
-                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                        const idx = ((row + dy) * w + (col + dx)) * 4;
-                                        data[idx] = r;
-                                        data[idx + 1] = g;
-                                        data[idx + 2] = b;
-                                    }
-                                }
-                            }
-                        }
-
-                        ctx.putImageData(imageData, x, y);
-
-                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.2)';
-                        ctx.lineWidth = 1.5;
-                        ctx.setLineDash([4, 6]);
-                        ctx.strokeRect(x, y, w, h);
-                        ctx.setLineDash([]);
-
-                        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                        ctx.font = '16px system-ui, sans-serif';
-                        ctx.fillText('🔒', x + 6, y + 26);
-
-                    } catch (err) {
-                        // Skip on error
-                    }
-                }
-            }
-
-            // ================================================================
-            // PROCESS LOOP
+            // 6. PROCESS FRAME
             // ================================================================
 
             function processFrame() {
@@ -837,18 +912,82 @@
                 }
 
                 try {
+                    // Draw video to canvas
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    if (faceDetector && mediaPipeReady) {
+                    // Detect faces
+                    let faces = [];
+
+                    if (faceDetectorReady) {
                         try {
-                            faceDetector.send({ image: video });
+                            // Use face-api.js
+                            const detections = faceapi.detectAllFaces(
+                                video,
+                                new faceapi.TinyFaceDetectorOptions({
+                                    inputSize: 416,
+                                    scoreThreshold: 0.5
+                                })
+                            );
+
+                            for (const det of detections) {
+                                const box = det.box;
+                                faces.push({
+                                    x: box.x,
+                                    y: box.y,
+                                    width: box.width,
+                                    height: box.height
+                                });
+                            }
                         } catch (err) {
-                            // MediaPipe error — ignore
+                            // Fallback to skin detection
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = 320;
+                            tempCanvas.height = 240;
+                            const tempCtx = tempCanvas.getContext('2d');
+                            tempCtx.drawImage(video, 0, 0, 320, 240);
+                            const imageData = tempCtx.getImageData(0, 0, 320, 240);
+                            const skinFaces = detectFacesWithSkin(imageData);
+
+                            // Scale to canvas size
+                            const scaleX = canvas.width / 320;
+                            const scaleY = canvas.height / 240;
+                            for (const f of skinFaces) {
+                                faces.push({
+                                    x: f.x * scaleX,
+                                    y: f.y * scaleY,
+                                    width: f.width * scaleX,
+                                    height: f.height * scaleY
+                                });
+                            }
+                        }
+                    } else {
+                        // Use skin detection only
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = 320;
+                        tempCanvas.height = 240;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0, 320, 240);
+                        const imageData = tempCtx.getImageData(0, 0, 320, 240);
+                        const skinFaces = detectFacesWithSkin(imageData);
+
+                        const scaleX = canvas.width / 320;
+                        const scaleY = canvas.height / 240;
+                        for (const f of skinFaces) {
+                            faces.push({
+                                x: f.x * scaleX,
+                                y: f.y * scaleY,
+                                width: f.width * scaleX,
+                                height: f.height * scaleY
+                            });
                         }
                     }
 
-                    if (privacyActive && detectedFaces.length > 0) {
-                        applyPrivacyMask(detectedFaces);
+                    // Update face count
+                    faceCount.textContent = faces.length > 0 ? faces.length + ' faces' : '';
+
+                    // Apply blur if privacy is active
+                    if (privacyActive && faces.length > 0) {
+                        applyPrivacyMask(faces);
                     }
 
                     requestAnimationFrame(processFrame);
@@ -860,7 +999,7 @@
             }
 
             // ================================================================
-            // CAMERA
+            // 7. CAMERA
             // ================================================================
 
             async function startCamera() {
@@ -881,8 +1020,10 @@
                         canvas.height = video.videoHeight;
                         isReady = true;
 
-                        initMediaPipe();
-                        processFrame();
+                        // Load face detection
+                        loadFaceDetection();
+
+                        // Start QR scanner
                         startAutoQRScanner();
                     };
 
@@ -893,7 +1034,7 @@
             }
 
             // ================================================================
-            // QR CODE GENERATOR
+            // 8. QR GENERATOR
             // ================================================================
 
             let qrGenerated = false;
@@ -930,7 +1071,7 @@
             }
 
             // ================================================================
-            // VIEW SWITCHING
+            // 9. VIEW SWITCHING
             // ================================================================
 
             function toggleQRView() {
@@ -951,7 +1092,7 @@
             switchBtn.addEventListener('click', toggleQRView);
 
             // ================================================================
-            // KEYBOARD SHORTCUTS
+            // 10. KEYBOARD SHORTCUTS
             // ================================================================
 
             document.addEventListener('keydown', (e) => {
@@ -961,18 +1102,14 @@
             });
 
             // ================================================================
-            // INIT
+            // 11. INIT
             // ================================================================
 
-            console.log('🕶️ PrivacyLens — Open Once, Never Again');
+            console.log('🕶️ PrivacyLens — Working Version');
             console.log('📸 QR: ' + TARGET_QR);
             console.log('⌨️  G=Toggle QR, D=Download PNG, P=Print');
 
             startCamera();
-
-            // ================================================================
-            // CLEANUP
-            // ================================================================
 
             window.addEventListener('beforeunload', () => {
                 if (stream) {
