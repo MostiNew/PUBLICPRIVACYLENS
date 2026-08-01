@@ -596,7 +596,7 @@
         }
 
         /* ================================================================
-           SWITCH BUTTON (App ↔ QR)
+           SWITCH BUTTON
            ================================================================ */
         .switch-btn {
             position: fixed;
@@ -639,36 +639,29 @@
                 border-radius: 24px;
                 max-height: 98vh;
             }
-
             .qr-card .title {
                 font-size: 22px;
             }
-
             .qr-container .qr-code {
                 width: 170px;
                 height: 170px;
             }
-
             .qr-container .scan-ring {
                 width: 200px;
                 height: 200px;
             }
-
             .qr-card .btn {
                 padding: 10px 20px;
                 font-size: 13px;
                 width: 100%;
                 justify-content: center;
             }
-
             .qr-card .btn-group {
                 flex-direction: column;
             }
-
             .qr-card .icon {
                 font-size: 44px;
             }
-
             .hud-top {
                 font-size: 10px;
                 padding: 4px 12px;
@@ -712,13 +705,12 @@
         }
 
         /* ================================================================
-           PRINT STYLES (QR View only)
+           PRINT STYLES
            ================================================================ */
         @media print {
             #app-view {
                 display: none !important;
             }
-
             #qr-view {
                 position: static !important;
                 display: flex !important;
@@ -726,11 +718,9 @@
                 padding: 20px !important;
                 min-height: 100vh;
             }
-
             .bg-animation {
                 display: none !important;
             }
-
             .qr-card {
                 background: #fff !important;
                 backdrop-filter: none !important;
@@ -741,104 +731,83 @@
                 animation: none !important;
                 max-height: none !important;
             }
-
             .qr-card .title {
                 color: #000 !important;
             }
-
             .qr-card .title span {
                 -webkit-text-fill-color: #1a1a2e !important;
                 background: none !important;
             }
-
             .qr-card .subtitle {
                 color: #666 !important;
             }
-
             .qr-container {
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
                 padding: 16px !important;
             }
-
             .qr-container .scan-ring {
                 display: none !important;
             }
-
             .qr-card .badge {
                 background: #f0f8f0 !important;
                 color: #27ae60 !important;
                 border-color: #d0e8d0 !important;
             }
-
             .qr-card .qr-value {
                 color: #999 !important;
                 background: #f5f5f5 !important;
             }
-
             .qr-card .btn-group {
                 display: none !important;
             }
-
             .qr-card .footer {
                 color: #ccc !important;
             }
-
             .switch-btn {
                 display: none !important;
             }
-
             .toast {
                 display: none !important;
             }
-
             .qr-overlay {
                 display: none !important;
             }
         }
 
         /* ================================================================
-           DARK MODE SUPPORT (QR View)
+           DARK MODE SUPPORT
            ================================================================ */
         @media (prefers-color-scheme: light) {
             #qr-view {
                 background: #f0f4ff;
             }
-
             .bg-animation .orb {
                 opacity: 0.2;
             }
-
             .qr-card {
                 background: rgba(255, 255, 255, 0.8);
                 border-color: rgba(255, 255, 255, 0.3);
             }
-
             .qr-card .title {
                 color: #1a1a2e;
             }
-
             .qr-card .subtitle {
                 color: rgba(0, 0, 0, 0.5);
             }
-
             .qr-card .qr-value {
                 color: rgba(0, 0, 0, 0.3);
                 background: rgba(0, 0, 0, 0.04);
             }
-
             .qr-card .btn-outline {
                 color: rgba(0, 0, 0, 0.6);
                 border-color: rgba(0, 0, 0, 0.08);
             }
-
             .qr-card .btn-outline:hover {
                 background: rgba(0, 0, 0, 0.04);
             }
-
             .qr-card .footer {
                 color: rgba(0, 0, 0, 0.15);
             }
-
             .qr-card .badge {
                 background: rgba(46, 204, 113, 0.1);
                 border-color: rgba(46, 204, 113, 0.2);
@@ -953,6 +922,15 @@
             let stream = null;
             let isQRViewVisible = false;
 
+            // Face detection thresholds — TUNED FOR ACCURACY
+            const FACE_MIN_SIZE = 0.04; // Minimum face size (4% of frame)
+            const FACE_MAX_SIZE = 0.50; // Maximum face size (50% of frame)
+            const SKIN_THRESHOLD = 30; // Minimum skin pixels to form a face
+            const CLUSTER_THRESHOLD = 25; // Pixel distance for clustering
+            const ASPECT_RATIO_MIN = 0.6;
+            const ASPECT_RATIO_MAX = 1.4;
+            const SMOOTH_FACTOR = 0.7;
+
             // ================================================================
             // 2. DOM REFS
             // ================================================================
@@ -975,13 +953,13 @@
             const switchLabel = document.getElementById('switch-label');
 
             // ================================================================
-            // 3. FACE DETECTION (Fast, Pure JS)
+            // 3. REFINED FACE DETECTION
             // ================================================================
 
-            class FastFaceDetector {
+            class RefinedFaceDetector {
                 constructor() {
                     this.faces = [];
-                    this.smoothFactor = 0.6;
+                    this.smoothFactor = SMOOTH_FACTOR;
                 }
 
                 detect(imageData) {
@@ -989,8 +967,9 @@
                     const w = imageData.width;
                     const h = imageData.height;
 
+                    // Step 1: Detect skin-color pixels
                     const candidates = [];
-                    const step = 4;
+                    const step = 3;
 
                     for (let y = 0; y < h; y += step) {
                         for (let x = 0; x < w; x += step) {
@@ -999,17 +978,20 @@
                             const g = data[idx + 1];
                             const b = data[idx + 2];
 
+                            // YCbCr skin detection with tighter bounds
                             const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
                             const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
 
-                            if (cr >= 133 && cr <= 173 && cb >= 77 && cb <= 127) {
+                            // Tighter skin color range
+                            if (cr >= 135 && cr <= 170 && cb >= 80 && cb <= 125) {
                                 candidates.push({ x, y });
                             }
                         }
                     }
 
+                    // Step 2: Cluster skin pixels
                     const clusters = [];
-                    const threshold = 20;
+                    const threshold = CLUSTER_THRESHOLD;
 
                     for (const p of candidates) {
                         let found = false;
@@ -1018,8 +1000,8 @@
                             const dy = p.y - cluster.cy;
                             if (dx * dx + dy * dy < threshold * threshold) {
                                 cluster.points.push(p);
-                                cluster.cx = (cluster.cx * cluster.points.length + p.x) / (cluster.points.length + 1);
-                                cluster.cy = (cluster.cy * cluster.points.length + p.y) / (cluster.points.length + 1);
+                                cluster.cx = (cluster.cx * (cluster.points.length - 1) + p.x) / cluster.points.length;
+                                cluster.cy = (cluster.cy * (cluster.points.length - 1) + p.y) / cluster.points.length;
                                 found = true;
                                 break;
                             }
@@ -1029,54 +1011,96 @@
                         }
                     }
 
-                    const faces = [];
+                    // Step 3: Filter clusters that could be faces
+                    const rawFaces = [];
                     for (const cluster of clusters) {
                         const count = cluster.points.length;
-                        if (count > 30 && count < 500) {
-                            let minX = Infinity,
-                                minY = Infinity,
-                                maxX = -Infinity,
-                                maxY = -Infinity;
-                            for (const p of cluster.points) {
-                                if (p.x < minX) minX = p.x;
-                                if (p.y < minY) minY = p.y;
-                                if (p.x > maxX) maxX = p.x;
-                                if (p.y > maxY) maxY = p.y;
+
+                        // Skip if too few or too many pixels
+                        if (count < SKIN_THRESHOLD || count > 800) continue;
+
+                        // Find bounding box
+                        let minX = Infinity,
+                            minY = Infinity,
+                            maxX = -Infinity,
+                            maxY = -Infinity;
+                        for (const p of cluster.points) {
+                            if (p.x < minX) minX = p.x;
+                            if (p.y < minY) minY = p.y;
+                            if (p.x > maxX) maxX = p.x;
+                            if (p.y > maxY) maxY = p.y;
+                        }
+
+                        const fw = maxX - minX;
+                        const fh = maxY - minY;
+
+                        // Skip if too small or too large
+                        if (fw < 20 || fh < 20 || fw > w * 0.6 || fh > h * 0.6) continue;
+
+                        // Check aspect ratio
+                        const aspectRatio = fw / fh;
+                        if (aspectRatio < ASPECT_RATIO_MIN || aspectRatio > ASPECT_RATIO_MAX) continue;
+
+                        // Check relative size
+                        const relSize = (fw * fh) / (w * h);
+                        if (relSize < FACE_MIN_SIZE || relSize > FACE_MAX_SIZE) continue;
+
+                        // Check density
+                        const density = count / (fw * fh);
+                        if (density < 0.15) continue;
+
+                        rawFaces.push({
+                            x: minX / w,
+                            y: minY / h,
+                            width: fw / w,
+                            height: fh / h,
+                            confidence: Math.min(1, density / 0.5)
+                        });
+                    }
+
+                    // Step 4: Smooth and deduplicate
+                    const smoothedFaces = [];
+                    const dedupThreshold = 0.08;
+
+                    for (const face of rawFaces) {
+                        let isDuplicate = false;
+                        for (const existing of smoothedFaces) {
+                            const dx = face.x - existing.x;
+                            const dy = face.y - existing.y;
+                            if (dx * dx + dy * dy < dedupThreshold * dedupThreshold) {
+                                isDuplicate = true;
+                                break;
                             }
-                            const fw = maxX - minX;
-                            const fh = maxY - minY;
-                            const aspectRatio = fw / fh;
-                            if (aspectRatio > 0.5 && aspectRatio < 1.5) {
-                                faces.push({
-                                    x: minX / w,
-                                    y: minY / h,
-                                    width: fw / w,
-                                    height: fh / h,
-                                });
-                            }
+                        }
+                        if (!isDuplicate) {
+                            smoothedFaces.push(face);
                         }
                     }
 
-                    if (this.faces.length > 0 && faces.length > 0) {
-                        for (let i = 0; i < Math.min(this.faces.length, faces.length); i++) {
-                            faces[i].x = this.faces[i].x * this.smoothFactor + faces[i].x * (1 - this.smoothFactor);
-                            faces[i].y = this.faces[i].y * this.smoothFactor + faces[i].y * (1 - this.smoothFactor);
-                            faces[i].width = this.faces[i].width * this.smoothFactor + faces[i].width * (1 - this
-                            .smoothFactor);
-                            faces[i].height = this.faces[i].height * this.smoothFactor + faces[i].height * (1 - this
-                                .smoothFactor);
+                    // Apply temporal smoothing
+                    if (this.faces.length > 0 && smoothedFaces.length > 0) {
+                        const minLen = Math.min(this.faces.length, smoothedFaces.length);
+                        for (let i = 0; i < minLen; i++) {
+                            smoothedFaces[i].x = this.faces[i].x * this.smoothFactor +
+                                smoothedFaces[i].x * (1 - this.smoothFactor);
+                            smoothedFaces[i].y = this.faces[i].y * this.smoothFactor +
+                                smoothedFaces[i].y * (1 - this.smoothFactor);
+                            smoothedFaces[i].width = this.faces[i].width * this.smoothFactor +
+                                smoothedFaces[i].width * (1 - this.smoothFactor);
+                            smoothedFaces[i].height = this.faces[i].height * this.smoothFactor +
+                                smoothedFaces[i].height * (1 - this.smoothFactor);
                         }
                     }
 
-                    this.faces = faces;
-                    return faces;
+                    this.faces = smoothedFaces;
+                    return smoothedFaces;
                 }
             }
 
-            const detector = new FastFaceDetector();
+            const detector = new RefinedFaceDetector();
 
             // ================================================================
-            // 4. DRAW OVERLAY
+            // 4. DRAW OVERLAY — Refined Blur
             // ================================================================
 
             function drawOverlay(faces) {
@@ -1087,6 +1111,7 @@
                 const faceCount = faces ? faces.length : 0;
                 count.textContent = faceCount + ' faces';
 
+                // If privacy is OFF, show lock overlay
                 if (!isActive) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
                     ctx.fillRect(0, 0, w, h);
@@ -1101,41 +1126,82 @@
                     return;
                 }
 
-                if (!faces || faces.length === 0) return;
+                // If privacy is ON but no faces, draw subtle scan indicator
+                if (!faces || faces.length === 0) {
+                    ctx.fillStyle = 'rgba(46, 204, 113, 0.03)';
+                    ctx.fillRect(0, 0, w, h);
+                    return;
+                }
 
+                // Blur ONLY face regions — with proper bounds
                 for (const face of faces) {
-                    const x = face.x * w;
-                    const y = face.y * h;
-                    const fw = face.width * w;
-                    const fh = face.height * h;
+                    // Calculate face bounds with padding
+                    const pad = 0.12;
+                    let x = Math.max(0, (face.x - pad) * w);
+                    let y = Math.max(0, (face.y - pad) * h);
+                    let fw = Math.min(w - x, (face.width + pad * 2) * w);
+                    let fh = Math.min(h - y, (face.height + pad * 2) * h);
 
-                    const pad = 0.15;
-                    const px = x - fw * pad;
-                    const py = y - fh * pad;
-                    const pw = fw * (1 + pad * 2);
-                    const ph = fh * (1 + pad * 2);
+                    // Ensure minimum size
+                    if (fw < 10 || fh < 10) continue;
 
-                    const step = 10;
-                    for (let row = py; row < py + ph; row += step) {
-                        for (let col = px; col < px + pw; col += step) {
-                            const hue = ((row * 0.3 + col * 0.7 + 180) % 360);
-                            ctx.fillStyle = `hsl(${hue}, 40%, 50%)`;
-                            ctx.fillRect(col, row, step, step);
+                    // Draw blurred mosaic ONLY within the face bounds
+                    const step = Math.max(6, Math.min(14, Math.round(fw / 20)));
+
+                    // Get the source image from the video
+                    // Draw the face region from the video
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = fw;
+                    tempCanvas.height = fh;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(video, x, y, fw, fh, 0, 0, fw, fh);
+
+                    // Apply mosaic effect
+                    const imageData = tempCtx.getImageData(0, 0, fw, fh);
+                    const data = imageData.data;
+
+                    for (let row = 0; row < fh; row += step) {
+                        for (let col = 0; col < fw; col += step) {
+                            // Average color in the block
+                            let r = 0,
+                                g = 0,
+                                b = 0,
+                                count = 0;
+                            for (let dy = 0; dy < step && row + dy < fh; dy++) {
+                                for (let dx = 0; dx < step && col + dx < fw; dx++) {
+                                    const idx = ((row + dy) * fw + (col + dx)) * 4;
+                                    r += data[idx];
+                                    g += data[idx + 1];
+                                    b += data[idx + 2];
+                                    count++;
+                                }
+                            }
+                            if (count > 0) {
+                                r = Math.round(r / count);
+                                g = Math.round(g / count);
+                                b = Math.round(b / count);
+                            }
+
+                            ctx.fillStyle = `rgb(${r},${g},${b})`;
+                            ctx.fillRect(x + col, y + row, step, step);
                         }
                     }
 
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-                    ctx.fillRect(px, py, pw, ph);
+                    // Add subtle dark overlay for privacy feel
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                    ctx.fillRect(x, y, fw, fh);
 
-                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+                    // Privacy border
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.4)';
                     ctx.lineWidth = 2;
                     ctx.setLineDash([4, 6]);
-                    ctx.strokeRect(px, py, pw, ph);
+                    ctx.strokeRect(x, y, fw, fh);
                     ctx.setLineDash([]);
 
-                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                    ctx.font = '16px system-ui, sans-serif';
-                    ctx.fillText('🔒', px + 8, py + 28);
+                    // Lock icon in corner
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.font = '14px system-ui, sans-serif';
+                    ctx.fillText('🔒', x + 8, y + 24);
                 }
             }
 
@@ -1156,11 +1222,11 @@
                     }
 
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = 320;
-                    tempCanvas.height = 240;
+                    tempCanvas.width = Math.min(video.videoWidth, 320);
+                    tempCanvas.height = Math.min(video.videoHeight, 240);
                     const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(video, 0, 0, 320, 240);
-                    const imageData = tempCtx.getImageData(0, 0, 320, 240);
+                    tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
 
                     const faces = detector.detect(imageData);
                     drawOverlay(faces);
@@ -1275,7 +1341,7 @@
             }
 
             // ================================================================
-            // 9. QR CODE GENERATOR (Modern)
+            // 9. QR CODE GENERATOR
             // ================================================================
 
             function generateQRCodeSVG(text) {
@@ -1337,7 +1403,7 @@
             }
 
             // ================================================================
-            // 10. QR ACTIONS (Download, Print, Copy)
+            // 10. QR ACTIONS
             // ================================================================
 
             function downloadPNG() {
@@ -1417,7 +1483,7 @@
             }
 
             // ================================================================
-            // 11. VIEW SWITCHING (App ↔ QR)
+            // 11. VIEW SWITCHING
             // ================================================================
 
             function toggleQRView() {
@@ -1516,7 +1582,7 @@
                     showToast('❌ Camera error: ' + err.message, 'error', 4000);
                 }
 
-                console.log('🕶️ PrivacyLens — One QR Code');
+                console.log('🕶️ PrivacyLens — Refined Face Detection');
                 console.log('📸 Scan QR: ' + ACTIVATION_QR);
                 console.log('📄 Press G to toggle QR view');
                 console.log('⌨️  D=Download, P=Print, C=Copy, R=Reset');
