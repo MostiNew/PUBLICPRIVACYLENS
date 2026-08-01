@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens</title>
+    <title>PrivacyLens · Passive</title>
 
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js">
@@ -61,7 +61,7 @@
             pointer-events: none;
         }
 
-        /* QR Overlay */
+        /* QR Overlay — Disappears on detection */
         .qr-overlay {
             position: fixed;
             top: 0;
@@ -76,11 +76,9 @@
             justify-content: center;
             flex-direction: column;
         }
-
         .qr-overlay.hidden {
             opacity: 0;
         }
-
         .qr-overlay .box {
             width: 160px;
             height: 160px;
@@ -88,7 +86,6 @@
             border-radius: 12px;
             position: relative;
         }
-
         .qr-overlay .box .corner {
             position: absolute;
             width: 16px;
@@ -97,7 +94,6 @@
             border-style: solid;
             border-width: 0;
         }
-
         .qr-overlay .box .corner.tl {
             top: -2px;
             left: -2px;
@@ -122,7 +118,6 @@
             border-bottom-width: 2px;
             border-right-width: 2px;
         }
-
         .qr-overlay .box .line {
             position: absolute;
             top: 50%;
@@ -133,7 +128,6 @@
             animation: scanLine 2s ease-in-out infinite;
             transform: translateY(-50%);
         }
-
         @keyframes scanLine {
             0%,
             100% {
@@ -143,7 +137,6 @@
                 top: 90%;
             }
         }
-
         .qr-overlay .label {
             color: rgba(255, 255, 255, 0.12);
             font-size: 10px;
@@ -152,7 +145,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* HUD */
+        /* HUD — Minimal */
         .hud {
             position: fixed;
             z-index: 5;
@@ -160,7 +153,6 @@
             color: rgba(255, 255, 255, 0.06);
             font-family: system-ui, sans-serif;
         }
-
         .hud-top {
             top: 10px;
             left: 50%;
@@ -173,7 +165,6 @@
             align-items: center;
             gap: 6px;
         }
-
         .hud-top .dot {
             width: 4px;
             height: 4px;
@@ -181,12 +172,10 @@
             display: inline-block;
             background: #555;
         }
-
         .hud-top .dot.active {
             background: #2ecc71;
             box-shadow: 0 0 8px rgba(46, 204, 113, 0.2);
         }
-
         .hud-bottom {
             bottom: 10px;
             left: 50%;
@@ -200,12 +189,11 @@
             gap: 6px;
             opacity: 0.2;
         }
-
         .hud-bottom .count {
             color: rgba(139, 235, 200, 0.2);
         }
 
-        /* QR View */
+        /* QR View (Generator) */
         #qr-view {
             position: fixed;
             top: 0;
@@ -220,7 +208,6 @@
             background: #0a0e1a;
             overflow: hidden;
         }
-
         #qr-view.visible {
             display: flex;
         }
@@ -287,7 +274,6 @@
             margin-bottom: 16px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
         }
-
         .qr-container #qrcode canvas,
         .qr-container #qrcode img {
             display: block;
@@ -336,7 +322,6 @@
             color: #fff;
             border: none;
         }
-
         .qr-card .btn-primary:hover {
             box-shadow: 0 4px 24px rgba(45, 140, 255, 0.3);
         }
@@ -346,7 +331,6 @@
             color: #fff;
             border: none;
         }
-
         .qr-card .btn-success:hover {
             box-shadow: 0 4px 24px rgba(46, 204, 113, 0.3);
         }
@@ -518,7 +502,7 @@
 <body>
 
     <!-- ============================================================
-    CAMERA VIEW
+    CAMERA VIEW — Passive Privacy
     ============================================================ -->
     <div id="camera-view">
         <video id="camera" playsinline autoplay muted></video>
@@ -545,14 +529,14 @@
     </div>
 
     <!-- ============================================================
-    QR VIEW
+    QR VIEW — Generator
     ============================================================ -->
     <div id="qr-view">
         <div class="qr-card">
-            <div class="badge">🔒 Zero-Touch Privacy</div>
+            <div class="badge">🔒 Passive Privacy</div>
             <span class="icon">🕶️</span>
             <h1>Privacy<span>Lens</span></h1>
-            <p class="subtitle">Scan this QR code to activate privacy</p>
+            <p class="subtitle">Scan this QR code with any camera</p>
             <div class="qr-container"><div id="qrcode"></div></div>
             <div class="qr-value">PRIVACYLENS-ON</div>
             <div class="btn-group">
@@ -560,11 +544,11 @@
                 <button class="btn btn-success" onclick="window.print()">🖨️ Print</button>
             </div>
             <div class="instructions">
-                <h4>📌 Zero-Touch Setup</h4>
+                <h4>📌 Pure Passive Setup</h4>
                 <ol>
                     <li><strong>Print</strong> this QR code and place at eye level.</li>
-                    <li><strong>Open</strong> PrivacyLens on your smart glasses.</li>
-                    <li><strong>No interaction</strong> — glasses see QR → privacy activates.</li>
+                    <li><strong>Open</strong> PrivacyLens on any camera device.</li>
+                    <li><strong>Zero interaction</strong> — QR seen → privacy activates.</li>
                 </ol>
             </div>
             <div class="footer">One QR · One Purpose · Privacy for Everyone</div>
@@ -572,7 +556,7 @@
     </div>
 
     <!-- ============================================================
-    SWITCH BUTTON
+    SWITCH BUTTON (Only for QR generation)
     ============================================================ -->
     <button class="switch-btn" id="switchBtn">
         <span id="switchIcon">📄</span>
@@ -580,14 +564,14 @@
     </button>
 
     <!-- ============================================================
-    JAVASCRIPT — FIXED
+    JAVASCRIPT — Passive Privacy Engine
     ============================================================ -->
     <script>
         (function() {
             'use strict';
 
             // ================================================================
-            // CONFIG
+            // CONFIG — One QR, One Purpose
             // ================================================================
 
             const TARGET_QR = 'PRIVACYLENS-ON';
@@ -597,6 +581,7 @@
             let detectedFaces = [];
             let isQRViewVisible = false;
             let faceDetector = null;
+            let mediaPipeReady = false;
 
             // ================================================================
             // DOM
@@ -617,7 +602,7 @@
             const switchLabel = document.getElementById('switchLabel');
 
             // ================================================================
-            // MEDIAPIPE FACE DETECTION — ACCURATE
+            // MEDIAPIPE FACE DETECTION
             // ================================================================
 
             function initMediaPipe() {
@@ -648,7 +633,7 @@
                         faceCount.textContent = detectedFaces.length > 0 ? detectedFaces.length + ' faces' : '';
                     });
 
-                    console.log('✅ MediaPipe initialized');
+                    mediaPipeReady = true;
                     return true;
 
                 } catch (error) {
@@ -658,14 +643,13 @@
             }
 
             // ================================================================
-            // QR SCANNER
+            // QR SCANNER — Passive, Continuous
             // ================================================================
 
             let qrScanInterval = null;
 
             function startAutoQRScanner() {
                 if (!('BarcodeDetector' in window)) {
-                    // Load jsQR fallback
                     const script = document.createElement('script');
                     script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
                     script.onload = () => {
@@ -740,7 +724,7 @@
             }
 
             // ================================================================
-            // ACTIVATE PRIVACY
+            // ACTIVATE PRIVACY — Once, Passive, Forever
             // ================================================================
 
             function activatePrivacy() {
@@ -760,14 +744,13 @@
             }
 
             // ================================================================
-            // PRIVACY BLUR — ONLY ON FACE REGIONS
+            // PRIVACY BLUR — Faces Only
             // ================================================================
 
             function applyPrivacyMask(faces) {
                 if (!faces || faces.length === 0) return;
 
                 for (const face of faces) {
-                    // Clamp face bounds to canvas
                     const x = Math.max(0, face.x);
                     const y = Math.max(0, face.y);
                     const w = Math.min(canvas.width - x, face.w);
@@ -776,12 +759,10 @@
                     if (w < 8 || h < 8) continue;
 
                     try {
-                        // Get image data for this face region ONLY
                         const imageData = ctx.getImageData(x, y, w, h);
                         const data = imageData.data;
                         const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
 
-                        // Pixelate the face region
                         for (let row = 0; row < h; row += pixelSize) {
                             for (let col = 0; col < w; col += pixelSize) {
                                 let r = 0,
@@ -814,23 +795,20 @@
                             }
                         }
 
-                        // Put the pixelated face back
                         ctx.putImageData(imageData, x, y);
 
-                        // Privacy border (subtle)
                         ctx.strokeStyle = 'rgba(239, 68, 68, 0.2)';
                         ctx.lineWidth = 1.5;
                         ctx.setLineDash([4, 6]);
                         ctx.strokeRect(x, y, w, h);
                         ctx.setLineDash([]);
 
-                        // Lock icon
                         ctx.fillStyle = 'rgba(255,255,255,0.15)';
                         ctx.font = '16px system-ui, sans-serif';
                         ctx.fillText('🔒', x + 6, y + 26);
 
                     } catch (err) {
-                        console.warn('Blur error:', err);
+                        // Skip on error
                     }
                 }
             }
@@ -839,8 +817,6 @@
             // PROCESS LOOP
             // ================================================================
 
-            let mediaPipeReady = false;
-
             function processFrame() {
                 if (!isReady || !video || video.readyState < 2) {
                     requestAnimationFrame(processFrame);
@@ -848,26 +824,16 @@
                 }
 
                 try {
-                    // Draw video to canvas
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // Run MediaPipe face detection
-                    if (faceDetector && !mediaPipeReady) {
-                        try {
-                            faceDetector.send({ image: video });
-                            mediaPipeReady = true;
-                        } catch (err) {
-                            // MediaPipe not ready yet
-                        }
-                    } else if (faceDetector) {
+                    if (faceDetector && mediaPipeReady) {
                         try {
                             faceDetector.send({ image: video });
                         } catch (err) {
-                            // MediaPipe error — fallback to simple detection
+                            // MediaPipe error — ignore
                         }
                     }
 
-                    // Apply privacy blur if active
                     if (privacyActive && detectedFaces.length > 0) {
                         applyPrivacyMask(detectedFaces);
                     }
@@ -881,7 +847,7 @@
             }
 
             // ================================================================
-            // CAMERA
+            // CAMERA — Auto-start
             // ================================================================
 
             async function startCamera() {
@@ -902,12 +868,7 @@
                         canvas.height = video.videoHeight;
                         isReady = true;
 
-                        // Initialize MediaPipe
-                        const mpReady = initMediaPipe();
-
-                        // If MediaPipe fails, we'll still try to use it
-                        // but fallback detection is built into the loop
-
+                        initMediaPipe();
                         processFrame();
                         startAutoQRScanner();
                     };
@@ -984,22 +945,15 @@
                 if (e.key === 'g' || e.key === 'G') toggleQRView();
                 if (e.key === 'd' || e.key === 'D') downloadQR();
                 if (e.key === 'p' || e.key === 'P') window.print();
-                if (e.key === 'r' || e.key === 'R') {
-                    privacyActive = false;
-                    statusDot.className = 'dot';
-                    statusText.textContent = '•';
-                    qrOverlay.classList.remove('hidden');
-                    startAutoQRScanner();
-                }
             });
 
             // ================================================================
             // INIT
             // ================================================================
 
-            console.log('🕶️ PrivacyLens');
+            console.log('🕶️ PrivacyLens — Passive Mode');
             console.log('📸 QR: ' + TARGET_QR);
-            console.log('⌨️  G=Toggle QR, D=Download PNG, P=Print, R=Rescan');
+            console.log('⌨️  G=Toggle QR, D=Download PNG, P=Print');
 
             startCamera();
 
