@@ -4,16 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
-    <title>PrivacyLens · Always On</title>
+    <title>PrivacyLens</title>
 
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
-    </script>
-
-    <!-- jsQR -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js">
     </script>
 
     <style>
@@ -22,14 +18,12 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background: #000;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
         }
-
         #camera {
             position: fixed;
             top: 0;
@@ -39,7 +33,6 @@
             object-fit: cover;
             z-index: 1;
         }
-
         #output {
             position: fixed;
             top: 0;
@@ -49,8 +42,6 @@
             z-index: 2;
             pointer-events: none;
         }
-
-        /* QR Overlay — Disappears on detection */
         .qr-overlay {
             position: fixed;
             top: 0;
@@ -59,24 +50,22 @@
             height: 100vh;
             z-index: 3;
             pointer-events: none;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
         }
         .qr-overlay.hidden {
             opacity: 0;
-            pointer-events: none;
         }
-
         .qr-overlay .box {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             width: 160px;
             height: 160px;
-            border: 1.5px solid rgba(46, 204, 113, 0.2);
+            border: 2px solid rgba(46, 204, 113, 0.2);
             border-radius: 12px;
+            position: relative;
         }
-
         .qr-overlay .box .corner {
             position: absolute;
             width: 16px;
@@ -109,18 +98,16 @@
             border-bottom-width: 2px;
             border-right-width: 2px;
         }
-
         .qr-overlay .box .line {
             position: absolute;
             top: 50%;
             left: 10%;
             width: 80%;
-            height: 1.5px;
+            height: 2px;
             background: linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.2), transparent);
             animation: scanLine 2s ease-in-out infinite;
             transform: translateY(-50%);
         }
-
         @keyframes scanLine {
             0%,
             100% {
@@ -130,47 +117,32 @@
                 top: 90%;
             }
         }
-
         .qr-overlay .label {
-            position: absolute;
-            bottom: 20%;
-            left: 50%;
-            transform: translateX(-50%);
             color: rgba(255, 255, 255, 0.15);
             font-size: 10px;
-            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 2px 10px;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.02);
-            white-space: nowrap;
+            font-family: system-ui, sans-serif;
+            margin-top: 16px;
             letter-spacing: 0.5px;
         }
-
-        /* HUD — Almost invisible */
         .hud {
             position: fixed;
             z-index: 5;
             pointer-events: none;
             color: rgba(255, 255, 255, 0.08);
-            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, sans-serif;
         }
-
         .hud-top {
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 9px;
             background: rgba(0, 0, 0, 0.1);
-            padding: 1px 10px;
+            padding: 2px 10px;
             border-radius: 40px;
-            backdrop-filter: blur(2px);
-            border: 1px solid rgba(255, 255, 255, 0.01);
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
         .hud-top .dot {
             width: 4px;
             height: 4px;
@@ -178,12 +150,10 @@
             display: inline-block;
             background: #555;
         }
-
         .hud-top .dot.active {
             background: #2ecc71;
-            box-shadow: 0 0 6px rgba(46, 204, 113, 0.15);
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
         }
-
         .hud-bottom {
             bottom: 10px;
             left: 50%;
@@ -192,33 +162,18 @@
             background: rgba(0, 0, 0, 0.08);
             padding: 1px 8px;
             border-radius: 40px;
-            backdrop-filter: blur(2px);
-            border: 1px solid rgba(255, 255, 255, 0.01);
             display: flex;
             align-items: center;
             gap: 6px;
             opacity: 0.3;
         }
-
         .hud-bottom .count {
             color: rgba(139, 235, 200, 0.3);
         }
-
         @media (max-width: 600px) {
             .qr-overlay .box {
                 width: 130px;
                 height: 130px;
-            }
-            .qr-overlay .label {
-                font-size: 8px;
-                bottom: 22%;
-            }
-        }
-
-        @media (orientation: landscape) {
-            .qr-overlay .box {
-                width: 180px;
-                height: 180px;
             }
         }
     </style>
@@ -253,7 +208,7 @@
             'use strict';
 
             // ================================================================
-            // CONFIG — One QR, One Purpose
+            // CONFIG
             // ================================================================
 
             const TARGET_QR = 'PRIVACYLENS-ON';
@@ -261,8 +216,6 @@
             let isReady = false;
             let stream = null;
             let detectedFaces = [];
-            let faceDetector = null;
-            let frameSkip = 0;
 
             // ================================================================
             // DOM
@@ -278,42 +231,13 @@
             const qrOverlay = document.getElementById('qrOverlay');
 
             // ================================================================
-            // CAMERA — Always On
+            // 1. FACE DETECTION — Two Methods
             // ================================================================
 
-            async function startCamera() {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 640 },
-                            height: { ideal: 480 }
-                        },
-                        audio: false
-                    });
+            // --- METHOD A: MediaPipe (Primary) ---
+            let faceDetector = null;
 
-                    video.srcObject = stream;
-
-                    video.onloadedmetadata = () => {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        isReady = true;
-                        initFaceDetection();
-                        processFrame();
-                        startAutoQRScanner();
-                    };
-
-                } catch (error) {
-                    console.error('Camera error:', error);
-                    setTimeout(startCamera, 3000);
-                }
-            }
-
-            // ================================================================
-            // FACE DETECTION — Zero Latency Pipeline
-            // ================================================================
-
-            function initFaceDetection() {
+            function initMediaPipe() {
                 try {
                     faceDetector = new FaceDetection({
                         locateFile: (file) => {
@@ -328,7 +252,7 @@
 
                     faceDetector.onResults((results) => {
                         detectedFaces = [];
-                        if (results.detections) {
+                        if (results.detections && results.detections.length > 0) {
                             results.detections.forEach((face) => {
                                 const box = face.boundingBox;
                                 const x = (box.xCenter - box.width / 2) * canvas.width;
@@ -338,17 +262,77 @@
                                 detectedFaces.push({ x, y, w, h });
                             });
                         }
-                        const count = detectedFaces.length;
-                        faceCount.textContent = count > 0 ? count + ' faces' : '';
+                        updateFaceCount();
                     });
 
+                    console.log('✅ MediaPipe initialized');
+                    return true;
+
                 } catch (error) {
-                    console.error('Face detection error:', error);
+                    console.warn('MediaPipe init failed:', error);
+                    return false;
                 }
             }
 
+            // --- METHOD B: Simple Fallback (runs immediately) ---
+            function simpleFaceDetect(imageData) {
+                const faces = [];
+                const data = imageData.data;
+                const w = imageData.width;
+                const h = imageData.height;
+
+                // Skin color detection (fast)
+                for (let y = 0; y < h; y += 6) {
+                    for (let x = 0; x < w; x += 6) {
+                        const idx = (y * w + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+
+                        // YCbCr skin detection
+                        const cb = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
+                        const cr = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
+
+                        if (cr >= 133 && cr <= 173 && cb >= 77 && cb <= 127) {
+                            // Check for face-like cluster
+                            let found = false;
+                            for (const face of faces) {
+                                const dx = x - face.x;
+                                const dy = y - face.y;
+                                if (dx * dx + dy * dy < 900) {
+                                    face.count++;
+                                    face.x = (face.x * (face.count - 1) + x) / face.count;
+                                    face.y = (face.y * (face.count - 1) + y) / face.count;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                faces.push({ x, y, count: 1, w: 0, h: 0 });
+                            }
+                        }
+                    }
+                }
+
+                // Filter and create bounding boxes
+                const result = [];
+                for (const f of faces) {
+                    if (f.count > 15) {
+                        const size = Math.sqrt(f.count) * 2.5;
+                        result.push({
+                            x: Math.max(0, (f.x - size / 2) / w),
+                            y: Math.max(0, (f.y - size / 2) / h),
+                            width: Math.min(1, size / w),
+                            height: Math.min(1, size / h)
+                        });
+                    }
+                }
+
+                return result;
+            }
+
             // ================================================================
-            // QR SCANNER — Continuous, Silent
+            // 2. QR SCANNER
             // ================================================================
 
             let qrScanInterval = null;
@@ -388,41 +372,49 @@
                         }
                     }, 300);
                 } else {
-                    // jsQR fallback
-                    qrScanInterval = setInterval(() => {
-                        if (privacyActive) {
-                            qrOverlay.classList.add('hidden');
-                            return;
-                        }
-
-                        try {
-                            if (!video || video.readyState < 2) return;
-
-                            const tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = Math.min(video.videoWidth || 640, 480);
-                            tempCanvas.height = Math.min(video.videoHeight || 480, 360);
-                            const tempCtx = tempCanvas.getContext('2d');
-                            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-
-                            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                            if (code && code.data) {
-                                const decoded = code.data.toUpperCase().trim();
-                                if (decoded === TARGET_QR) {
-                                    activatePrivacy();
-                                    return;
-                                }
+                    // jsQR fallback via CDN
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+                    script.onload = () => {
+                        qrScanInterval = setInterval(() => {
+                            if (privacyActive) {
+                                qrOverlay.classList.add('hidden');
+                                return;
                             }
-                        } catch (err) {
-                            // Silent fail
-                        }
-                    }, 400);
+
+                            try {
+                                if (!video || video.readyState < 2) return;
+
+                                const tempCanvas = document.createElement('canvas');
+                                tempCanvas.width = Math.min(video.videoWidth || 640, 480);
+                                tempCanvas.height = Math.min(video.videoHeight || 480, 360);
+                                const tempCtx = tempCanvas.getContext('2d');
+                                tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas
+                                .height);
+
+                                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width,
+                                    tempCanvas.height);
+                                const code = jsQR(imageData.data, imageData.width, imageData
+                                .height);
+
+                                if (code && code.data) {
+                                    const decoded = code.data.toUpperCase().trim();
+                                    if (decoded === TARGET_QR) {
+                                        activatePrivacy();
+                                        return;
+                                    }
+                                }
+                            } catch (err) {
+                                // Silent fail
+                            }
+                        }, 400);
+                    };
+                    document.head.appendChild(script);
                 }
             }
 
             // ================================================================
-            // ACTIVATE — Once, Instantly, Forever
+            // 3. ACTIVATE PRIVACY
             // ================================================================
 
             function activatePrivacy() {
@@ -430,83 +422,97 @@
                 privacyActive = true;
 
                 statusDot.className = 'dot active';
-                statusText.textContent = '•';
+                statusText.textContent = '●';
                 qrOverlay.classList.add('hidden');
 
                 if (qrScanInterval) {
                     clearInterval(qrScanInterval);
                     qrScanInterval = null;
                 }
+
+                console.log('✅ Privacy Activated — faces will blur');
             }
 
             // ================================================================
-            // PRIVACY BLUR — Zero Latency Pixelation
+            // 4. PRIVACY BLUR
             // ================================================================
 
-            function applyPrivacyMask() {
-                if (detectedFaces.length === 0) return;
+            function applyPrivacyMask(faces) {
+                if (!faces || faces.length === 0) return;
 
-                // Process all faces
-                for (const face of detectedFaces) {
-                    const x = Math.max(0, face.x);
-                    const y = Math.max(0, face.y);
-                    const w = Math.min(canvas.width - x, face.w);
-                    const h = Math.min(canvas.height - y, face.h);
+                for (const face of faces) {
+                    const x = Math.max(0, face.x * canvas.width);
+                    const y = Math.max(0, face.y * canvas.height);
+                    const w = Math.min(canvas.width - x, face.width * canvas.width);
+                    const h = Math.min(canvas.height - y, face.height * canvas.height);
 
-                    if (w < 8 || h < 8) continue;
+                    if (w < 10 || h < 10) continue;
 
-                    // Get image data for this face
-                    const imageData = ctx.getImageData(x, y, w, h);
-                    const data = imageData.data;
-                    const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
+                    try {
+                        const imageData = ctx.getImageData(x, y, w, h);
+                        const data = imageData.data;
+                        const pixelSize = Math.max(6, Math.min(14, Math.round((w + h) / 40)));
 
-                    // Pixelate
-                    for (let row = 0; row < h; row += pixelSize) {
-                        for (let col = 0; col < w; col += pixelSize) {
-                            let r = 0,
-                                g = 0,
-                                b = 0,
-                                count = 0;
-                            for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                                for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                    const idx = ((row + dy) * w + (col + dx)) * 4;
-                                    r += data[idx];
-                                    g += data[idx + 1];
-                                    b += data[idx + 2];
-                                    count++;
+                        for (let row = 0; row < h; row += pixelSize) {
+                            for (let col = 0; col < w; col += pixelSize) {
+                                let r = 0,
+                                    g = 0,
+                                    b = 0,
+                                    count = 0;
+                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                        const idx = ((row + dy) * w + (col + dx)) * 4;
+                                        r += data[idx];
+                                        g += data[idx + 1];
+                                        b += data[idx + 2];
+                                        count++;
+                                    }
                                 }
-                            }
-                            if (count > 0) {
-                                r = Math.round(r / count);
-                                g = Math.round(g / count);
-                                b = Math.round(b / count);
-                            }
+                                if (count > 0) {
+                                    r = Math.round(r / count);
+                                    g = Math.round(g / count);
+                                    b = Math.round(b / count);
+                                }
 
-                            for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
-                                for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
-                                    const idx = ((row + dy) * w + (col + dx)) * 4;
-                                    data[idx] = r;
-                                    data[idx + 1] = g;
-                                    data[idx + 2] = b;
+                                for (let dy = 0; dy < pixelSize && row + dy < h; dy++) {
+                                    for (let dx = 0; dx < pixelSize && col + dx < w; dx++) {
+                                        const idx = ((row + dy) * w + (col + dx)) * 4;
+                                        data[idx] = r;
+                                        data[idx + 1] = g;
+                                        data[idx + 2] = b;
+                                    }
                                 }
                             }
                         }
+
+                        ctx.putImageData(imageData, x, y);
+
+                        // Subtle privacy border
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.2)';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([4, 6]);
+                        ctx.strokeRect(x, y, w, h);
+                        ctx.setLineDash([]);
+
+                    } catch (err) {
+                        // Skip if image data fails
                     }
-
-                    ctx.putImageData(imageData, x, y);
-
-                    // Subtle privacy border
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.15)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([3, 5]);
-                    ctx.strokeRect(x, y, w, h);
-                    ctx.setLineDash([]);
                 }
             }
 
             // ================================================================
-            // PROCESS LOOP — Zero Latency
+            // 5. UPDATE UI
             // ================================================================
+
+            function updateFaceCount() {
+                faceCount.textContent = detectedFaces.length > 0 ? detectedFaces.length + ' faces' : '';
+            }
+
+            // ================================================================
+            // 6. PROCESS LOOP
+            // ================================================================
+
+            let useFallback = false;
 
             function processFrame() {
                 if (!isReady || !video || video.readyState < 2) {
@@ -515,17 +521,51 @@
                 }
 
                 try {
-                    // Draw the video frame
+                    // Draw video
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // Run face detection
-                    if (faceDetector) {
-                        faceDetector.send({ image: video });
+                    // Face detection
+                    let faces = [];
+
+                    if (faceDetector && !useFallback) {
+                        // MediaPipe is running asynchronously
+                        // The results come through onResults callback
+                        faces = detectedFaces;
                     }
 
-                    // If privacy is active, blur faces
-                    if (privacyActive && detectedFaces.length > 0) {
-                        applyPrivacyMask();
+                    // If MediaPipe isn't ready, use fallback
+                    if (!faceDetector || useFallback) {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = 320;
+                        tempCanvas.height = 240;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0, 320, 240);
+                        const imageData = tempCtx.getImageData(0, 0, 320, 240);
+
+                        const simpleFaces = simpleFaceDetect(imageData);
+                        if (simpleFaces.length > 0) {
+                            faces = simpleFaces;
+                            detectedFaces = simpleFaces;
+                            updateFaceCount();
+                            // Use fallback if MediaPipe isn't working
+                            if (!faceDetector) {
+                                useFallback = true;
+                            }
+                        }
+                    }
+
+                    // Apply privacy blur if active
+                    if (privacyActive && faces.length > 0) {
+                        applyPrivacyMask(faces);
+                    }
+
+                    // Call MediaPipe send if available
+                    if (faceDetector && !useFallback) {
+                        try {
+                            faceDetector.send({ image: video });
+                        } catch (err) {
+                            useFallback = true;
+                        }
                     }
 
                     requestAnimationFrame(processFrame);
@@ -537,14 +577,53 @@
             }
 
             // ================================================================
-            // INIT
+            // 7. CAMERA
             // ================================================================
 
-            console.log('🕶️ PrivacyLens — Always On');
-            console.log('📸 QR: ' + TARGET_QR);
-            console.log('⚡ Zero latency face blurring');
+            async function startCamera() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        },
+                        audio: false
+                    });
 
-            // Start everything
+                    video.srcObject = stream;
+
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        isReady = true;
+
+                        // Try MediaPipe first
+                        const mpReady = initMediaPipe();
+
+                        // If MediaPipe fails, fallback is automatic
+                        if (!mpReady) {
+                            useFallback = true;
+                            console.log('⚠️ Using fallback face detection');
+                        }
+
+                        processFrame();
+                        startAutoQRScanner();
+                    };
+
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    setTimeout(startCamera, 3000);
+                }
+            }
+
+            // ================================================================
+            // 8. INIT
+            // ================================================================
+
+            console.log('🕶️ PrivacyLens');
+            console.log('📸 QR: ' + TARGET_QR);
+
             startCamera();
 
             window.addEventListener('beforeunload', () => {
