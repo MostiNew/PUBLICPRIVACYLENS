@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#000000" />
     <title>PrivacyLens · Zero-Touch</title>
 
+    <!-- jsQR — Lightweight QR decoder -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -52,7 +55,266 @@
             pointer-events: none;
         }
 
-        /* ===== QR VIEW ===== */
+        /* ===== HUD ===== */
+        .hud {
+            position: fixed;
+            z-index: 5;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+            font-weight: 500;
+        }
+
+        .hud-top {
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 14px;
+            border-radius: 40px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-top .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #555;
+            animation: none;
+        }
+
+        .hud-top .dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71aa;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .hud-top .dot.scanning {
+            background: #f39c12;
+            box-shadow: 0 0 12px #f39c12aa;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.85);
+            }
+        }
+
+        .hud-top .status {
+            font-weight: 500;
+            font-size: 11px;
+        }
+
+        .hud-bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 12px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.6;
+        }
+
+        .hud-bottom .count {
+            color: #8bebc8;
+            font-weight: 600;
+        }
+
+        .hud-bottom .privacy {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .hud-bottom .privacy.on {
+            color: #2ecc71;
+        }
+
+        /* ===== QR OVERLAY ===== */
+        .qr-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(1px);
+        }
+
+        .qr-overlay.active {
+            display: block;
+        }
+
+        .qr-overlay .box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(46, 204, 113, 0.3);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .qr-overlay .box .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: #2ecc71;
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .qr-overlay .box .corner.tl {
+            top: -2px;
+            left: -2px;
+            border-top-width: 3px;
+            border-left-width: 3px;
+        }
+        .qr-overlay .box .corner.tr {
+            top: -2px;
+            right: -2px;
+            border-top-width: 3px;
+            border-right-width: 3px;
+        }
+        .qr-overlay .box .corner.bl {
+            bottom: -2px;
+            left: -2px;
+            border-bottom-width: 3px;
+            border-left-width: 3px;
+        }
+        .qr-overlay .box .corner.br {
+            bottom: -2px;
+            right: -2px;
+            border-bottom-width: 3px;
+            border-right-width: 3px;
+        }
+
+        .qr-overlay .box .line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2ecc71, transparent);
+            animation: scan 2s ease-in-out infinite;
+            transform: translateY(-50%);
+            opacity: 0.3;
+        }
+
+        @keyframes scan {
+            0%,
+            100% {
+                top: 10%;
+            }
+            50% {
+                top: 90%;
+            }
+        }
+
+        .qr-overlay .label {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 14px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            opacity: 0;
+            transition: all 0.4s ease;
+            pointer-events: none;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: #2ecc71;
+        }
+        .toast.error {
+            border-color: #e74c3c;
+        }
+        .toast.info {
+            border-color: #3498db;
+        }
+
+        /* ===== SWITCH BUTTON ===== */
+        .switch-btn {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 40px;
+            padding: 6px 16px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+
+        .switch-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        /* ================================================================
+           QR VIEW
+           ================================================================ */
         #qr-view {
             position: fixed;
             top: 0;
@@ -351,270 +613,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* ===== HUD ===== */
-        .hud {
-            position: fixed;
-            z-index: 5;
-            pointer-events: none;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
-            font-weight: 500;
-        }
-
-        .hud-top {
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 11px;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 4px 14px;
-            border-radius: 40px;
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .hud-top .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-            background: #555;
-            animation: none;
-        }
-
-        .hud-top .dot.active {
-            background: #2ecc71;
-            box-shadow: 0 0 12px #2ecc71aa;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        .hud-top .dot.scanning {
-            background: #f39c12;
-            box-shadow: 0 0 12px #f39c12aa;
-        }
-
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(0.85);
-            }
-        }
-
-        .hud-top .status {
-            font-weight: 500;
-            font-size: 11px;
-        }
-
-        .hud-bottom {
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 9px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 3px 12px;
-            border-radius: 40px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0.5;
-        }
-
-        .hud-bottom .count {
-            color: #8bebc8;
-            font-weight: 600;
-        }
-
-        .hud-bottom .privacy {
-            color: #e74c3c;
-            font-weight: 600;
-        }
-
-        .hud-bottom .privacy.on {
-            color: #2ecc71;
-        }
-
-        /* ===== QR OVERLAY — Scanner ===== */
-        .qr-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 10;
-            pointer-events: none;
-            display: none;
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(2px);
-        }
-
-        .qr-overlay.active {
-            display: block;
-        }
-
-        .qr-overlay .box {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 2px solid rgba(46, 204, 113, 0.4);
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        .qr-overlay .box .corner {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: #2ecc71;
-            border-style: solid;
-            border-width: 0;
-        }
-
-        .qr-overlay .box .corner.tl {
-            top: -2px;
-            left: -2px;
-            border-top-width: 3px;
-            border-left-width: 3px;
-        }
-        .qr-overlay .box .corner.tr {
-            top: -2px;
-            right: -2px;
-            border-top-width: 3px;
-            border-right-width: 3px;
-        }
-        .qr-overlay .box .corner.bl {
-            bottom: -2px;
-            left: -2px;
-            border-bottom-width: 3px;
-            border-left-width: 3px;
-        }
-        .qr-overlay .box .corner.br {
-            bottom: -2px;
-            right: -2px;
-            border-bottom-width: 3px;
-            border-right-width: 3px;
-        }
-
-        .qr-overlay .box .line {
-            position: absolute;
-            top: 50%;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #2ecc71, transparent);
-            animation: scan 2s ease-in-out infinite;
-            transform: translateY(-50%);
-            opacity: 0.4;
-        }
-
-        @keyframes scan {
-            0%,
-            100% {
-                top: 10%;
-            }
-            50% {
-                top: 90%;
-            }
-        }
-
-        .qr-overlay .label {
-            position: absolute;
-            bottom: 25%;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 11px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 4px 14px;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            white-space: nowrap;
-        }
-
-        /* ===== TOAST ===== */
-        .toast {
-            position: fixed;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            z-index: 20;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(12px);
-            color: #fff;
-            padding: 6px 16px;
-            border-radius: 40px;
-            font-size: 11px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            opacity: 0;
-            transition: all 0.4s ease;
-            pointer-events: none;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        .toast.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.success {
-            border-color: #2ecc71;
-        }
-        .toast.error {
-            border-color: #e74c3c;
-        }
-        .toast.info {
-            border-color: #3498db;
-        }
-
-        /* ===== SWITCH BUTTON ===== */
-        .switch-btn {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 30;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 40px;
-            padding: 6px 16px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: inherit;
-        }
-
-        .switch-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
-        .switch-btn .icon-sm {
-            font-size: 12px;
-        }
-
-        /* ================================================================
-           RESPONSIVE
-           ================================================================ */
         @media (max-width: 520px) {
             .qr-card {
                 padding: 32px 20px 28px;
@@ -756,9 +754,6 @@
             }
         }
 
-        /* ================================================================
-           DARK MODE SUPPORT
-           ================================================================ */
         @media (prefers-color-scheme: light) {
             #qr-view {
                 background: #f0f4ff;
@@ -806,7 +801,7 @@
         <video id="preview" playsinline autoplay muted></video>
         <canvas id="overlay-canvas"></canvas>
 
-        <!-- QR Scanner Overlay — Always Active -->
+        <!-- QR Scanner Overlay -->
         <div class="qr-overlay active" id="qr-overlay">
             <div class="box">
                 <div class="corner tl"></div>
@@ -815,7 +810,7 @@
                 <div class="corner br"></div>
                 <div class="line"></div>
             </div>
-            <div class="label" id="qr-label">🔍 Point at QR code...</div>
+            <div class="label" id="qr-label">🔍 Scanning for QR...</div>
         </div>
 
         <!-- HUD -->
@@ -885,7 +880,7 @@
     <div class="toast" id="toast"></div>
 
     <!-- ============================================================
-    JAVASCRIPT — FIXED QR SCANNER
+    JAVASCRIPT — WORKING QR SCANNER
     ============================================================ -->
     <script>
         (function() {
@@ -902,6 +897,7 @@
             let toastTimer = null;
             let stream = null;
             let isQRViewVisible = false;
+            let frameCount = 0;
 
             // ================================================================
             // 2. DOM REFS
@@ -932,11 +928,9 @@
                 constructor() {
                     this.faces = [];
                     this.smoothFactor = 0.6;
-                    this.frameCount = 0;
                 }
 
                 detect(imageData) {
-                    this.frameCount++;
                     const data = imageData.data;
                     const w = imageData.width;
                     const h = imageData.height;
@@ -1024,7 +1018,6 @@
                             width: Math.min(1, fw / w),
                             height: Math.min(1, fh / h),
                             confidence: Math.min(1, density / 0.5),
-                            pixelCount: count
                         });
                     }
 
@@ -1059,7 +1052,6 @@
                                 height: this.faces[i].height * this.smoothFactor + uniqueFaces[i].height * (1 - this
                                     .smoothFactor),
                                 confidence: uniqueFaces[i].confidence,
-                                pixelCount: uniqueFaces[i].pixelCount
                             };
                         }
                     }
@@ -1174,6 +1166,9 @@
                     const faces = detector.detect(imageData);
                     drawOverlay(faces);
 
+                    // QR SCANNING — Runs in the same loop with jsQR
+                    scanQR(imageData);
+
                     requestAnimationFrame(processFrame);
 
                 } catch (err) {
@@ -1183,194 +1178,57 @@
             }
 
             // ================================================================
-            // 6. QR SCANNER — FIXED: Uses Canvas + jsQR (Embedded)
+            // 6. QR SCANNER — Using jsQR (Works Everywhere)
             // ================================================================
 
-            // Embedded jsQR — lightweight QR decoder (no external dependency)
-            // This is a simplified QR decoder that works without user interaction
+            function scanQR(imageData) {
+                // If already activated, stop scanning
+                if (isActive) {
+                    qrOverlay.classList.remove('active');
+                    return;
+                }
 
-            function decodeQR(imageData) {
-                // This is a placeholder for the actual QR decoding
-                // In production, you'd use a lightweight QR library
-                // For now, we'll use a simple approach:
+                try {
+                    // Use jsQR to decode the image
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
 
-                // Look for QR-like patterns in the image
-                const data = imageData.data;
-                const w = imageData.width;
-                const h = imageData.height;
+                    if (code && code.data) {
+                        const decoded = code.data.toUpperCase().trim();
+                        console.log('📸 QR detected:', decoded);
 
-                // Simple QR detection: look for finder patterns (three corners)
-                // This is a simplified detection — for production use a proper QR library
-
-                // Check for high-contrast patterns
-                let candidates = [];
-                const step = 2;
-
-                for (let y = 0; y < h; y += step) {
-                    for (let x = 0; x < w; x += step) {
-                        const idx = (y * w + x) * 4;
-                        const r = data[idx];
-                        const g = data[idx + 1];
-                        const b = data[idx + 2];
-                        const brightness = (r + g + b) / 3;
-
-                        // Look for dark areas (potential QR code)
-                        if (brightness < 80) {
-                            candidates.push({ x, y, brightness });
+                        if (decoded === ACTIVATION_QR) {
+                            console.log('✅ Correct QR! Activating privacy...');
+                            isActive = true;
+                            qrOverlay.classList.remove('active');
+                            dot.className = 'dot active';
+                            status.textContent = '🔒 PRIVACY ON';
+                            privacy.textContent = '🔒 ON';
+                            privacy.className = 'privacy on';
+                            showToast('✅ Privacy activated!', 'success', 3000);
+                        } else {
+                            // Wrong QR code
+                            qrLabel.textContent = '❌ Wrong QR';
+                            showToast('❌ Invalid QR code: ' + decoded, 'error', 1500);
+                            setTimeout(() => {
+                                qrLabel.textContent = '🔍 Scanning for QR...';
+                            }, 2000);
+                        }
+                    } else {
+                        // No QR detected — update label occasionally
+                        frameCount++;
+                        if (frameCount % 30 === 0) {
+                            qrLabel.textContent = '🔍 Scanning for QR...';
                         }
                     }
-                }
-
-                // If we find a cluster of dark pixels, it might be a QR code
-                if (candidates.length > 100) {
-                    // Check if there's a pattern match
-                    // For now, we'll use a simulated detection
-                    // In production, replace with a proper QR library
-
-                    // Simulate QR detection for demo purposes
-                    // This will activate after a few seconds of scanning
-                    return null;
-                }
-
-                return null;
-            }
-
-            // ================================================================
-            // 7. QR SCANNER — Using BarcodeDetector (Works in Chrome/Edge)
-            // ================================================================
-
-            function startQRScanner() {
-                // Check if BarcodeDetector is available
-                if ('BarcodeDetector' in window) {
-                    console.log('📸 Using BarcodeDetector API');
-                    startBarcodeDetectorScanner();
-                } else {
-                    console.log('📸 BarcodeDetector not available, using fallback');
-                    startFallbackQRScanner();
+                } catch (err) {
+                    // Silent fail — keep scanning
                 }
             }
 
-            function startBarcodeDetectorScanner() {
-                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-                let scanCount = 0;
-
-                scanInterval = setInterval(async () => {
-                    if (isActive) {
-                        clearInterval(scanInterval);
-                        qrOverlay.classList.remove('active');
-                        return;
-                    }
-
-                    try {
-                        if (!video || !video.videoWidth || video.videoWidth === 0) return;
-
-                        // Capture frame
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = Math.min(video.videoWidth, 480);
-                        tempCanvas.height = Math.min(video.videoHeight, 360);
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-
-                        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                        const bitmap = await createImageBitmap(
-                            new ImageData(imageData.data, tempCanvas.width, tempCanvas.height)
-                        );
-
-                        const detections = await barcodeDetector.detect(bitmap);
-                        bitmap.close();
-
-                        scanCount++;
-
-                        for (const detection of detections) {
-                            const code = detection.rawValue.toUpperCase().trim();
-                            console.log('📸 QR detected:', code);
-
-                            if (code === ACTIVATION_QR) {
-                                console.log('✅ Correct QR! Activating privacy...');
-                                clearInterval(scanInterval);
-                                activatePrivacy();
-                                return;
-                            } else {
-                                qrLabel.textContent = '❌ Wrong QR';
-                                showToast('❌ Invalid QR code', 'error', 1500);
-                                setTimeout(() => {
-                                    qrLabel.textContent = '🔍 Point at QR code...';
-                                }, 2000);
-                            }
-                        }
-
-                        // Update status
-                        if (scanCount % 10 === 0) {
-                            qrLabel.textContent = '🔍 Scanning... (' + scanCount + ')';
-                        }
-
-                    } catch (err) {
-                        // Silent fail — keep scanning
-                        if (scanCount % 20 === 0) {
-                            console.warn('QR scan error:', err.message);
-                        }
-                    }
-                }, 300); // Scan every 300ms for faster response
-            }
-
-            function startFallbackQRScanner() {
-                // Fallback: Simulate QR detection after a few seconds
-                // This is a demo fallback — in production, use a QR library
-                let fallbackCount = 0;
-
-                scanInterval = setInterval(() => {
-                    if (isActive) {
-                        clearInterval(scanInterval);
-                        qrOverlay.classList.remove('active');
-                        return;
-                    }
-
-                    fallbackCount++;
-
-                    // Simulate scanning — after 5 seconds, auto-activate for demo
-                    if (fallbackCount > 15) {
-                        // In production, this would be real QR detection
-                        // For demo, we'll show a message
-                        qrLabel.textContent = '📲 Tap to activate (fallback)';
-
-                        // Remove the overlay so user can tap
-                        if (fallbackCount === 20) {
-                            qrOverlay.style.pointerEvents = 'auto';
-                            qrOverlay.addEventListener('click', function handler() {
-                                activatePrivacy();
-                                qrOverlay.removeEventListener('click', handler);
-                            });
-                            showToast('📲 Tap the screen to activate privacy', 'info', 3000);
-                        }
-                    }
-                }, 300);
-            }
-
             // ================================================================
-            // 8. ACTIVATE PRIVACY
-            // ================================================================
-
-            function activatePrivacy() {
-                isActive = true;
-
-                if (scanInterval) {
-                    clearInterval(scanInterval);
-                    scanInterval = null;
-                }
-
-                qrOverlay.classList.remove('active');
-
-                dot.className = 'dot active';
-                status.textContent = '🔒 PRIVACY ON';
-                privacy.textContent = '🔒 ON';
-                privacy.className = 'privacy on';
-
-                showToast('✅ Privacy activated!', 'success', 3000);
-                console.log('✅ Privacy activated — faces will be blurred');
-            }
-
-            // ================================================================
-            // 9. TOAST
+            // 7. TOAST
             // ================================================================
 
             function showToast(msg, type = 'info', duration = 2000) {
@@ -1383,7 +1241,7 @@
             }
 
             // ================================================================
-            // 10. QR CODE GENERATOR
+            // 8. QR CODE GENERATOR
             // ================================================================
 
             function generateQRCodeSVG(text) {
@@ -1445,7 +1303,7 @@
             }
 
             // ================================================================
-            // 11. QR ACTIONS
+            // 9. QR ACTIONS
             // ================================================================
 
             function downloadPNG() {
@@ -1525,7 +1383,7 @@
             }
 
             // ================================================================
-            // 12. VIEW SWITCHING
+            // 10. VIEW SWITCHING
             // ================================================================
 
             function toggleQRView() {
@@ -1544,7 +1402,7 @@
             }
 
             // ================================================================
-            // 13. RESIZE CANVAS
+            // 11. RESIZE CANVAS
             // ================================================================
 
             function resizeCanvas() {
@@ -1558,7 +1416,7 @@
             }
 
             // ================================================================
-            // 14. KEYBOARD SHORTCUTS
+            // 12. KEYBOARD SHORTCUTS
             // ================================================================
 
             document.addEventListener('keydown', (e) => {
@@ -1575,18 +1433,13 @@
                     privacy.textContent = '🔒 OFF';
                     privacy.className = 'privacy';
                     qrOverlay.classList.add('active');
-                    qrLabel.textContent = '🔍 Point at QR code...';
+                    qrLabel.textContent = '🔍 Scanning for QR...';
                     showToast('🔄 Reset — scanning for QR', 'info', 2000);
-                    if (scanInterval) {
-                        clearInterval(scanInterval);
-                        scanInterval = null;
-                    }
-                    startQRScanner();
                 }
             });
 
             // ================================================================
-            // 15. INIT
+            // 13. INIT
             // ================================================================
 
             async function init() {
@@ -1628,10 +1481,6 @@
                     console.log('✅ Camera ready, starting processing...');
                     processFrame();
 
-                    // Start QR scanner after a short delay
-                    console.log('🔍 QR scanner starting...');
-                    setTimeout(startQRScanner, 500);
-
                 } catch (err) {
                     console.error('Camera error:', err);
                     showToast('❌ Camera error: ' + err.message, 'error', 4000);
@@ -1646,10 +1495,6 @@
             window.addEventListener('beforeunload', () => {
                 if (stream) {
                     stream.getTracks().forEach(t => t.stop());
-                }
-                if (scanInterval) {
-                    clearInterval(scanInterval);
-                    scanInterval = null;
                 }
             });
 
